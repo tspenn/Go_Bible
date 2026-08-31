@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react'
-import { dictForWord, type DictEntry } from '../data/dictionary'
+import { dictForWord, dictSpansInText, type DictEntry } from '../data/dictionary'
 import {
   lookupStrongs,
   STRONGS_SOURCE,
@@ -173,7 +173,11 @@ export function VerseWords({
   scoMarks?: ScoMark[]
 }) {
   const rwp = rwpMarks ?? []
-  const ranges: { start: number; end: number; mark: ScoMark }[] = []
+  type Range =
+    | { kind: 'sco'; start: number; end: number; mark: ScoMark }
+    | { kind: 'dict'; start: number; end: number; entry: DictEntry }
+  const ranges: Range[] = []
+
   for (const mark of scoMarks ?? []) {
     if (!mark.phrase) continue
     const escaped = mark.phrase.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')
@@ -182,7 +186,12 @@ export function VerseWords({
     const start = m.index
     const end = m.index + m[0].length
     if (ranges.some((r) => start < r.end && end > r.start)) continue
-    ranges.push({ start, end, mark })
+    ranges.push({ kind: 'sco', start, end, mark })
+  }
+
+  for (const span of dictSpansInText(text)) {
+    if (ranges.some((r) => span.start < r.end && span.end > r.start)) continue
+    ranges.push({ kind: 'dict', start: span.start, end: span.end, entry: span.entry })
   }
   ranges.sort((a, b) => a.start - b.start)
 
@@ -205,36 +214,52 @@ export function VerseWords({
         />,
       )
     }
-        const rwpHere = rwp.filter((m) =>
-          new RegExp(`\\b${m.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(
-            text.slice(range.start, range.end),
-          ),
-        )
-        chunks.push(
-          <span key={range.mark.key}>
-            <button
-              type="button"
-              className="sco-phrase"
-              title={range.mark.title}
-              onClick={range.mark.onOpen}
-            >
-              {text.slice(range.start, range.end)}
+    const slice = text.slice(range.start, range.end)
+    if (range.kind === 'sco') {
+      const rwpHere = rwp.filter((m) =>
+        new RegExp(`\\b${m.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(slice),
+      )
+      chunks.push(
+        <span key={range.mark.key}>
+          <button
+            type="button"
+            className="sco-phrase"
+            title={range.mark.title}
+            onClick={range.mark.onOpen}
+          >
+            {slice}
+          </button>
+          <button
+            type="button"
+            className="callout"
+            title={range.mark.title}
+            onClick={range.mark.onOpen}
+          >
+            {range.mark.letter}
+          </button>
+          {rwpHere.map((m) => (
+            <button key={`rwp-${m.letter}`} type="button" className="callout" title={m.title} onClick={m.onOpen}>
+              {m.letter}
             </button>
-            <button
-              type="button"
-              className="callout"
-              title={range.mark.title}
-              onClick={range.mark.onOpen}
-            >
-              {range.mark.letter}
-            </button>
-            {rwpHere.map((m) => (
-              <button key={`rwp-${m.letter}`} type="button" className="callout" title={m.title} onClick={m.onOpen}>
-                {m.letter}
-              </button>
-            ))}
-          </span>,
-        )
+          ))}
+        </span>,
+      )
+    } else {
+      chunks.push(
+        <button
+          key={`d${range.start}-${range.entry.slug}`}
+          type="button"
+          className="dict-hit"
+          title={range.entry.name}
+          onClick={(e) => {
+            const box = e.currentTarget.getBoundingClientRect()
+            onOpen({ kind: 'dict', entry: range.entry, word: slice, verse, x: box.left, y: box.bottom })
+          }}
+        >
+          {slice}
+        </button>,
+      )
+    }
     at = range.end
   })
   if (at < text.length) {
@@ -327,7 +352,9 @@ export function DictCard({
 }) {
   return (
     <CardShell x={popup.x} y={popup.y} label={popup.entry.name} onClose={onClose}>
-      <p className="strongs-num">Easton’s Bible Dictionary</p>
+      <p className="strongs-num">
+        {popup.entry.source === 'Smith' ? 'Smith’s Bible Dictionary' : 'Easton’s Bible Dictionary, 1897'}
+      </p>
       <p className="strongs-word">{popup.entry.name}</p>
       <p className="strongs-gloss">{popup.entry.body}</p>
       <p className="strongs-src">Public domain</p>

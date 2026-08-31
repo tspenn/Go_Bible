@@ -335,6 +335,16 @@ export function VersePage({
             focus={sheetFocus}
             highlightKey={highlightKey}
             onClose={closeSheet}
+            onDictName={(entry, x, y) =>
+              setWordPopup({
+                kind: 'dict',
+                entry,
+                word: entry.name,
+                verse: sheetVerse ?? 0,
+                x,
+                y,
+              })
+            }
           />
         </>
       )}

@@ -1,5 +1,5 @@
 import { Link } from '../App'
-import type { DictEntry } from '../data/dictionary'
+import { linkBodyBits, type DictEntry } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
 import type { NaveTopic } from '../data/naves'
 import {
@@ -29,6 +29,7 @@ export function NotesSheet({
   focus,
   highlightKey,
   onClose,
+  onDictName,
 }: {
   bookName: string
   bookSlug: string
@@ -42,6 +43,7 @@ export function NotesSheet({
   focus: SheetFocus
   highlightKey: string | null
   onClose: () => void
+  onDictName?: (entry: DictEntry, x: number, y: number) => void
 }) {
   const rwpBook = isRobertsonBook(bookSlug)
   const showRwp = robertson.length > 0 || focus === 'robertson'
@@ -101,7 +103,33 @@ export function NotesSheet({
               {bookName} {henry.chapter}:{henry.verse}
               {henry.range && henry.range !== String(henry.verse) ? ` (on ${henry.range})` : ''}
             </h3>
-            <p>{henry.body}</p>
+            <p>
+              {linkBodyBits(henry.body, henry.bookSlug, henry.chapter).map((bit, i) => {
+                if (bit.type === 'ref') {
+                  return (
+                    <Link key={i} to={bit.href}>
+                      {bit.text}
+                    </Link>
+                  )
+                }
+                if (bit.type === 'dict') {
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      className="dict-hit"
+                      onClick={(e) => {
+                        const box = e.currentTarget.getBoundingClientRect()
+                        onDictName?.(bit.entry, box.left, box.bottom)
+                      }}
+                    >
+                      {bit.text}
+                    </button>
+                  )
+                }
+                return <span key={i}>{bit.text}</span>
+              })}
+            </p>
           </>
         ) : (
           <p>Henry coming</p>
@@ -110,11 +138,12 @@ export function NotesSheet({
 
       {dict.length > 0 && (
         <section id="sheet-dictionary" className={focus === 'dictionary' ? 'note-on' : undefined}>
-          <p className="source-line">Easton’s Bible Dictionary (public domain)</p>
+          <p className="source-line">Easton’s Bible Dictionary, 1897, and Smith (public domain)</p>
           {dict.map((d) => (
             <div key={d.slug}>
               <h3>{d.name}</h3>
               <p>{d.body}</p>
+              <p className="fine">{d.source === 'Smith' ? 'Smith’s Bible Dictionary' : 'Easton, 1897'}</p>
             </div>
           ))}
         </section>

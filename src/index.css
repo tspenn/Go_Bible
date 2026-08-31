@@ -192,6 +192,19 @@ button.sco-phrase {
   border-radius: 0;
 }
 button.sco-phrase:hover { color: var(--blue-deep); }
+.dict-hit {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--blue-deep);
+  border-radius: 0;
+}
+.dict-hit:hover { color: var(--blue-deep); }
 .see-also { font-size: 0.95rem; }
 .strongs-card {
   position: fixed;
