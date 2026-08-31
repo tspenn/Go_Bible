@@ -1,3 +1,5 @@
+import { parseRef } from './kjv'
+
 export type NaveTopic = {
   slug: string
   name: string
@@ -11,7 +13,7 @@ export const TOPICS: NaveTopic[] = [
     slug: 'faith',
     name: 'Faith',
     summary: 'Trust in God; the substance of things hoped for.',
-    refs: ['Hebrews 11:1', 'Hebrews 11:6', 'Romans 10:17', '2 Corinthians 5:7'],
+    refs: ['John 3:16', 'Hebrews 11:1', 'Hebrews 11:6', 'Romans 10:17', '2 Corinthians 5:7'],
   },
   {
     slug: 'walking',
@@ -23,7 +25,7 @@ export const TOPICS: NaveTopic[] = [
     slug: 'grace',
     name: 'Grace',
     summary: 'The unearned favor of God.',
-    refs: ['John 1:1', 'James 1:17'],
+    refs: ['John 1:1', 'John 3:16', 'James 1:17'],
   },
   {
     slug: 'prayer',
@@ -71,6 +73,15 @@ export const TOPICS: NaveTopic[] = [
 
 export function findTopic(slug: string) {
   return TOPICS.find((t) => t.slug === slug)
+}
+
+export function topicsForVerse(bookSlug: string, chapter: number, verse: number) {
+  return TOPICS.filter((t) =>
+    t.refs.some((r) => {
+      const p = parseRef(r)
+      return p?.bookSlug === bookSlug && p.chapter === chapter && p.verse === verse
+    }),
+  )
 }
 
 export function searchTopics(q: string) {

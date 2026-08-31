@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { parsePath, type Route } from './router'
+import { parseRef } from './data/kjv'
+import { auditScofieldPhrases } from './data/scofield'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
@@ -36,10 +38,12 @@ export function Link({
   to,
   children,
   className,
+  onClick,
 }: {
   to: string
   children: React.ReactNode
   className?: string
+  onClick?: () => void
 }) {
   return (
     <a
@@ -48,11 +52,43 @@ export function Link({
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
         e.preventDefault()
+        onClick?.()
         navigate(to)
       }}
     >
       {children}
     </a>
+  )
+}
+
+function HeaderSearch() {
+  const [q, setQ] = useState('')
+
+  function go(e: FormEvent) {
+    e.preventDefault()
+    const ref = parseRef(q)
+    if (ref) {
+      navigate(`/bible/${ref.bookSlug}/${ref.chapter}/${ref.verse}`)
+      return
+    }
+    const trimmed = q.trim()
+    navigate(trimmed ? `/topics?q=${encodeURIComponent(trimmed)}` : '/topics')
+  }
+
+  return (
+    <form className="header-search" onSubmit={go} role="search">
+      <input
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search topics or John 3:16"
+        aria-label="Search topics or John 3:16"
+        enterKeyHint="search"
+      />
+      <button type="submit" className="sr-only">
+        Search
+      </button>
+    </form>
   )
 }
 
@@ -69,7 +105,7 @@ function Screen({
     case 'home':
       return <HomePage />
     case 'topics':
-      return <TopicsPage />
+      return <TopicsPage search={search} />
     case 'topic':
       return <TopicPage slug={route.slug} />
     case 'bible':
@@ -100,21 +136,20 @@ export default function App() {
   const loc = useLocation()
   const route = parsePath(loc.pathname)
 
+  useEffect(() => {
+    auditScofieldPhrases()
+  }, [])
+
   return (
     <div className="app">
       <header className="masthead">
-        <Link to="/" className="brand">
-          <span className="brand-name">Look Up</span>
-          <span className="brand-sub">Walking By Faith Companion</span>
+        <Link to="/bible" className="brand">
+          <span className="brand-name">Go-Bible</span>
         </Link>
-        <nav>
-          <Link to="/">Home</Link>
-          <Link to="/topics">Topics</Link>
-          <Link to="/bible">Bible</Link>
-          <a href="https://faith.skylandpublishing.com/catalog" className="shop">
-            Shop
-          </a>
-        </nav>
+        <HeaderSearch />
+        <a href="https://faith.skylandpublishing.com/catalog" className="shop">
+          Shop
+        </a>
       </header>
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />

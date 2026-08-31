@@ -55,6 +55,11 @@ export function findDict(slug: string) {
   return DICTIONARY.find((d) => d.slug === slug)
 }
 
+export function dictForWord(word: string, linked: DictEntry[]) {
+  const key = word.toLowerCase()
+  return linked.find((d) => d.slug === key || d.name.toLowerCase() === key)
+}
+
 export function dictForVerse(bookSlug: string, chapter: number, verse: number) {
   const key = `${bookSlug}:${chapter}:${verse}`
   const map: Record<string, string[]> = {

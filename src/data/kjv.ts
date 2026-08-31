@@ -35,11 +35,34 @@ export function slugBook(book: string) {
 const BOOK_ALIASES: Record<string, string> = {
   psalm: 'psalms',
   psa: 'psalms',
+  ps: 'psalms',
   'song of songs': 'song-of-solomon',
   'song of solomon': 'song-of-solomon',
   canticles: 'song-of-solomon',
+  gen: 'genesis',
+  ex: 'exodus',
+  exo: 'exodus',
+  lev: 'leviticus',
+  num: 'numbers',
+  deut: 'deuteronomy',
+  dt: 'deuteronomy',
+  matt: 'matthew',
+  mat: 'matthew',
+  mt: 'matthew',
+  mk: 'mark',
+  lk: 'luke',
+  jn: 'john',
+  ro: 'romans',
+  rom: 'romans',
   '1 cor': '1-corinthians',
   '2 cor': '2-corinthians',
+  gal: 'galatians',
+  eph: 'ephesians',
+  phil: 'philippians',
+  col: 'colossians',
+  heb: 'hebrews',
+  jas: 'james',
+  jam: 'james',
   '1 jn': '1-john',
   '2 jn': '2-john',
   '3 jn': '3-john',
@@ -51,12 +74,13 @@ const BOOK_ALIASES: Record<string, string> = {
   '2 kgs': '2-kings',
   '1 chr': '1-chronicles',
   '2 chr': '2-chronicles',
-  mt: 'matthew',
-  mk: 'mark',
-  lk: 'luke',
-  jn: 'john',
-  ro: 'romans',
-  rom: 'romans',
+  isa: 'isaiah',
+  jer: 'jeremiah',
+  ezek: 'ezekiel',
+  dan: 'daniel',
+  rev: 'revelation',
+  prov: 'proverbs',
+  pr: 'proverbs',
 }
 
 for (const b of data.books) {
@@ -67,6 +91,15 @@ for (const b of data.books) {
 export function resolveBookSlug(book: string) {
   const key = book.trim().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ')
   return BOOK_ALIASES[key] ?? (bySlug.has(slugBook(key)) ? slugBook(key) : slugBook(book))
+}
+
+export function isKnownBook(book: string) {
+  const slug = resolveBookSlug(book)
+  return bySlug.has(slug)
+}
+
+export function bookName(slug: string) {
+  return bySlug.get(slug)?.name ?? slug
 }
 
 export function chapterCount(bookSlug: string) {

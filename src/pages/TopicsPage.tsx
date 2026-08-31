@@ -1,11 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from '../App'
 import { searchTopics } from '../data/naves'
 
-export function TopicsPage() {
-  const initial = new URLSearchParams(window.location.search).get('q') ?? ''
-  const [q, setQ] = useState(initial)
+export function TopicsPage({ search = '' }: { search?: string }) {
+  const fromUrl = new URLSearchParams(search).get('q') ?? ''
+  const [q, setQ] = useState(fromUrl)
   const results = useMemo(() => searchTopics(q), [q])
+
+  useEffect(() => {
+    setQ(fromUrl)
+  }, [fromUrl])
 
   return (
     <article className="page">

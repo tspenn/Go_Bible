@@ -1,28 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, navigate } from '../App'
 import { chapterCount, findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
-import { TOPICS } from '../data/naves'
-import {
-  markerLetter,
-  noteKey,
-  notesForChapter,
-  type ScofieldNote,
-} from '../data/scofield'
+import { topicsForVerse } from '../data/naves'
+import { markerLetter, noteKey, notesForChapter, phraseSpan } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
-import { henryForChapter, henryForVerse, HENRY_SOURCE } from '../data/henry'
+import { henryForVerse } from '../data/henry'
 import {
-  isRobertsonBook,
   noteByWord,
   notesForChapter as rwpForChapter,
-  ROBERTSON_SOURCE,
   rwpKey,
   type RobertsonNote,
 } from '../data/robertson'
-import { StrongsCard, VerseWords } from '../components/StrongsGloss'
-import type { StrongsHit } from '../data/strongs1890'
+import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
+import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
 import { parseVerseQuery } from '../router'
-
-type Tab = 'scripture' | 'notes' | 'henry' | 'dictionary' | 'topics' | 'robertson'
 
 export function VersePage({
   bookSlug,
@@ -47,7 +38,6 @@ export function VersePage({
       chapterNotes.map((n, i) => ({
         ...n,
         key: noteKey(n, i),
-        letter: markerLetter(i),
       })),
     [chapterNotes],
   )
@@ -82,59 +72,61 @@ export function VersePage({
   }, [rwpMarked])
 
   const totalChapters = chapterCount(bookSlug)
-  const dict = focus ? dictForVerse(bookSlug, chapter, focus) : []
-  const related = TOPICS.filter((t) =>
-    t.refs.some((r) => r.toLowerCase().includes(bookName.toLowerCase())),
-  )
   const query = parseVerseQuery(search, hash)
-  const rwpBook = isRobertsonBook(bookSlug)
 
-  const [tab, setTab] = useState<Tab>(() =>
-    parseVerseQuery(search, hash).tab === 'robertson' ? 'robertson' : 'scripture',
+  const sheetVerse = verse ?? focus
+  const [sheetOpen, setSheetOpen] = useState(
+    () =>
+      verse != null ||
+      parseVerseQuery(search, hash).tab === 'robertson' ||
+      parseVerseQuery(search, hash).tab === 'scofield',
   )
-  const [openNote, setOpenNote] = useState<string | null>(null)
-  const [openRwp, setOpenRwp] = useState<string | null>(null)
-  const [strongs, setStrongs] = useState<StrongsHit | null>(null)
-  const [henryVerse, setHenryVerse] = useState<number | null>(null)
-  const closeStrongs = useCallback(() => setStrongs(null), [])
-  const henryNotes = henryForChapter(bookSlug, chapter)
-  const henryFocus = henryVerse ?? focus
-  const henrySelected = henryFocus
-    ? henryForVerse(bookSlug, chapter, henryFocus)
-    : undefined
+  const [sheetFocus, setSheetFocus] = useState<SheetFocus>(() => {
+    const tab = parseVerseQuery(search, hash).tab
+    if (tab === 'robertson') return 'robertson'
+    if (tab === 'scofield') return 'scofield'
+    return null
+  })
+  const [highlightKey, setHighlightKey] = useState<string | null>(null)
+  const [wordPopup, setWordPopup] = useState<WordPopup | null>(null)
+  const closeWord = useCallback(() => setWordPopup(null), [])
 
-  const versePath =
-    verse != null ? `/bible/${bookSlug}/${chapter}/${verse}` : `/bible/${bookSlug}/${chapter}`
+  useEffect(() => {
+    if (!sheetOpen || !sheetFocus) return
+    const id =
+      sheetFocus === 'robertson' && highlightKey
+        ? `rwp-${rwpMarked.find((n) => n.key === highlightKey)?.letter ?? ''}`
+        : sheetFocus === 'scofield' && highlightKey
+          ? `note-${highlightKey}`
+          : `sheet-${sheetFocus}`
+    if (!id || id.endsWith('-')) return
+    requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'nearest' }))
+  }, [sheetOpen, sheetFocus, highlightKey, rwpMarked])
 
-  function setVerseTab(next: Tab) {
-    setTab(next)
-    const hasRwpQuery = query.tab === 'robertson'
-    if (next === 'robertson') {
-      navigate(`${versePath}?tab=robertson`)
-      return
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape' && !wordPopup) closeSheet()
     }
-    if (hasRwpQuery) navigate(versePath)
-  }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [wordPopup, sheetOpen])
 
   useEffect(() => {
-    closeStrongs()
-  }, [tab, bookSlug, chapter, closeStrongs])
+    closeWord()
+  }, [bookSlug, chapter, closeWord])
 
   useEffect(() => {
-    setHenryVerse(null)
-  }, [bookSlug, chapter, verse])
+    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield') {
+      setSheetOpen(true)
+      if (query.tab === 'robertson') setSheetFocus('robertson')
+      else if (query.tab === 'scofield') setSheetFocus('scofield')
+    } else {
+      setSheetOpen(false)
+    }
+  }, [bookSlug, chapter, verse, query.tab])
 
   useEffect(() => {
-    if (tab !== 'henry' || !henrySelected) return
-    document.getElementById(`henry-${henrySelected.verse}`)?.scrollIntoView({ block: 'nearest' })
-  }, [tab, henrySelected])
-
-  useEffect(() => {
-    if (query.tab === 'robertson') setTab('robertson')
-  }, [query.tab])
-
-  useEffect(() => {
-    if (tab !== 'robertson') return
+    if (!sheetOpen || query.tab !== 'robertson') return
     let pick = query.rwpLetter
       ? rwpMarked.find((n) => n.letter === query.rwpLetter)
       : undefined
@@ -144,34 +136,67 @@ export function VersePage({
         (n) => n.verse === byWord?.verse && n.word?.toLowerCase() === query.w?.toLowerCase(),
       )
     }
-    if (!pick && focus != null) pick = rwpByVerse.get(focus)?.[0]
-    setOpenRwp(pick?.key ?? null)
+    if (!pick && sheetVerse != null) pick = rwpByVerse.get(sheetVerse)?.[0]
+    setHighlightKey(pick?.key ?? null)
     if (pick) {
       const id = `rwp-${pick.letter}`
       requestAnimationFrame(() =>
         document.getElementById(id)?.scrollIntoView({ block: 'nearest' }),
       )
     }
-  }, [tab, query.rwpLetter, query.w, bookSlug, chapter, focus, rwpMarked, rwpByVerse])
-
-  function openScofield(note: ScofieldNote & { key: string }) {
-    setOpenNote(note.key)
-    setVerseTab('notes')
-  }
-
-  function openHenry(nextVerse: number) {
-    closeStrongs()
-    setHenryVerse(nextVerse)
-    setVerseTab('henry')
-  }
+  }, [
+    sheetOpen,
+    query.rwpLetter,
+    query.w,
+    query.tab,
+    bookSlug,
+    chapter,
+    sheetVerse,
+    rwpMarked,
+    rwpByVerse,
+  ])
 
   function openRobertson(note: RobertsonNote & { key: string; letter: string }) {
-    setOpenRwp(note.key)
-    setTab('robertson')
+    closeWord()
+    setSheetFocus('robertson')
+    setHighlightKey(note.key)
+    setSheetOpen(true)
     const params = new URLSearchParams({ tab: 'robertson' })
     if (note.word) params.set('w', note.word)
     navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?${params}#rwp-${note.letter}`)
   }
+
+  function openScofield(note: (typeof marked)[number]) {
+    closeWord()
+    setSheetFocus('scofield')
+    setHighlightKey(note.key)
+    setSheetOpen(true)
+    navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=scofield`)
+  }
+
+  function closeSheet() {
+    closeWord()
+    setSheetOpen(false)
+    setSheetFocus(null)
+    setHighlightKey(null)
+    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield') {
+      navigate(`/bible/${bookSlug}/${chapter}`)
+    }
+  }
+
+  function onThisVerse(nextVerse: number) {
+    closeWord()
+    setSheetFocus(null)
+    setHighlightKey(null)
+    setSheetOpen(true)
+    if (verse !== nextVerse) navigate(`/bible/${bookSlug}/${chapter}/${nextVerse}`)
+  }
+
+  const sheetNotes = sheetVerse != null ? (byVerse.get(sheetVerse) ?? []) : []
+  const sheetHenry = sheetVerse != null ? henryForVerse(bookSlug, chapter, sheetVerse) : undefined
+  const sheetDict = sheetVerse != null ? dictForVerse(bookSlug, chapter, sheetVerse) : []
+  const sheetTopics = sheetVerse != null ? topicsForVerse(bookSlug, chapter, sheetVerse) : []
+  const sheetRwp = sheetVerse != null ? (rwpByVerse.get(sheetVerse) ?? []) : []
 
   if (!list.length && !selected) {
     return (
@@ -187,60 +212,29 @@ export function VersePage({
   }
 
   return (
-    <article className="page">
-      <p className="eyebrow">Look Up</p>
-      <h1>
-        {bookName} {chapter}
-        {focus ? `:${focus}` : ''}
-      </h1>
-      {totalChapters > 1 && (
-        <nav className="chapter-index" aria-label="Chapters">
-          {Array.from({ length: totalChapters }, (_, i) => i + 1).map((n) => (
-            <Link
-              key={n}
-              to={`/bible/${bookSlug}/${n}`}
-              className={n === chapter ? 'on' : undefined}
-            >
-              {n}
-            </Link>
-          ))}
-        </nav>
-      )}
+    <article className={`page reading${sheetOpen ? ' with-notes' : ''}`}>
+      <div className="reader">
+        <h1>
+          {bookName} {chapter}
+        </h1>
+        {totalChapters > 1 && (
+          <nav className="chapter-index" aria-label="Chapters">
+            {Array.from({ length: totalChapters }, (_, i) => i + 1).map((n) => (
+              <Link
+                key={n}
+                to={`/bible/${bookSlug}/${n}`}
+                className={n === chapter ? 'on' : undefined}
+              >
+                {n}
+              </Link>
+            ))}
+          </nav>
+        )}
 
-      <div className="tabs" role="tablist">
-        <button type="button" className={tab === 'scripture' ? 'on' : ''} onClick={() => setVerseTab('scripture')}>
-          Scripture
-        </button>
-        <button type="button" className={tab === 'notes' ? 'on' : ''} onClick={() => setVerseTab('notes')}>
-          Scofield
-        </button>
-        <button type="button" className={tab === 'henry' ? 'on' : ''} onClick={() => setVerseTab('henry')}>
-          Henry
-        </button>
-        <button type="button" className={tab === 'dictionary' ? 'on' : ''} onClick={() => setVerseTab('dictionary')}>
-          Dictionary
-        </button>
-        <button type="button" className={tab === 'topics' ? 'on' : ''} onClick={() => setVerseTab('topics')}>
-          Topics
-        </button>
-        <button
-          type="button"
-          className={tab === 'robertson' ? 'on' : ''}
-          title={ROBERTSON_SOURCE}
-          aria-label={ROBERTSON_SOURCE}
-          onClick={() => setVerseTab('robertson')}
-        >
-          Robertson
-        </button>
-      </div>
-
-      {tab === 'scripture' && (
         <div className="chapter">
           <p className="source-line">
-            {SOURCE_LINE} Small letters open 1917 Scofield notes.
-            {rwpMarked.length > 0 ? ' Robertson letters open Word Pictures (1930).' : ''}
+            {SOURCE_LINE} Verse numbers open notes. Small letters open Scofield or Robertson.
           </p>
-          <p className="strongs-hint">Hold a word for Strong’s 1890.</p>
           {list.map((v) => {
             const marks = byVerse.get(v.verse) ?? []
             const rwpNotes = rwpByVerse.get(v.verse) ?? []
@@ -252,27 +246,42 @@ export function VersePage({
                 ),
             )
             const afterVerse = rwpNotes.filter((n) => !onWord.includes(n))
+            const dict = dictForVerse(bookSlug, chapter, v.verse)
+            const scoOnPhrase = marks.filter((n) => n.webPhrase && phraseSpan(v.text, n.webPhrase))
+            const scoVerseLevel = marks.filter((n) => !n.webPhrase || !phraseSpan(v.text, n.webPhrase))
             return (
               <p
                 key={v.verse}
                 id={`v${v.verse}`}
-                className={focus === v.verse ? 'highlight' : undefined}
+                className={focus === v.verse && verse != null ? 'highlight' : undefined}
               >
-                <Link to={`/bible/${v.bookSlug}/${v.chapter}/${v.verse}`} className="vn">
+                <Link
+                  to={`/bible/${v.bookSlug}/${v.chapter}/${v.verse}`}
+                  className="vn"
+                  onClick={closeWord}
+                >
                   {v.verse}
                 </Link>{' '}
                 <VerseWords
                   text={v.text}
                   verse={v.verse}
-                  onOpen={setStrongs}
+                  dict={dict}
+                  onOpen={setWordPopup}
                   rwpMarks={onWord.map((n) => ({
                     word: n.word as string,
                     letter: n.letter,
                     title: n.heading ? `Robertson: ${n.heading}` : 'Robertson note',
                     onOpen: () => openRobertson(n),
                   }))}
+                  scoMarks={scoOnPhrase.map((n) => ({
+                    phrase: n.webPhrase,
+                    letter: n.letter,
+                    title: n.heading ? `Scofield: ${n.heading}` : 'Scofield note',
+                    onOpen: () => openScofield(n),
+                    key: n.key,
+                  }))}
                 />
-                {marks.map((n) => (
+                {scoVerseLevel.map((n) => (
                   <button
                     key={n.key}
                     type="button"
@@ -298,114 +307,36 @@ export function VersePage({
             )
           })}
         </div>
-      )}
-      {tab === 'scripture' && strongs && (
+      </div>
+
+      {wordPopup?.kind === 'strongs' && (
         <StrongsCard
-          key={`${strongs.entry.id}-${strongs.verse}`}
-          hit={strongs}
-          onClose={closeStrongs}
-          onThisVerse={openHenry}
+          key={`${wordPopup.hit.entry.id}-${wordPopup.hit.verse}`}
+          hit={wordPopup.hit}
+          onClose={closeWord}
+          onThisVerse={onThisVerse}
         />
       )}
+      {wordPopup?.kind === 'dict' && <DictCard popup={wordPopup} onClose={closeWord} />}
 
-      {tab === 'notes' && (
-        <div className="panel">
-          <p className="source-line">Scofield Reference Bible notes, 1917 (public domain)</p>
-          {marked.length === 0 && <p>No 1917 Scofield note on this chapter in the seed set.</p>}
-          {marked.map((n) => (
-            <section
-              key={n.key}
-              id={`note-${n.key}`}
-              className={openNote === n.key ? 'note-on' : undefined}
-            >
-              <h2>
-                <span className="callout-label">{n.letter}</span> {bookName} {n.chapter}:{n.verse}
-                {n.heading ? ` — ${n.heading}` : ''}
-              </h2>
-              <p>{n.body}</p>
-            </section>
-          ))}
-        </div>
-      )}
-
-      {tab === 'henry' && (
-        <div className="panel">
-          <p className="source-line">{HENRY_SOURCE}</p>
-          {henryNotes.length === 0 && (
-            <p>No Matthew Henry note on this chapter in the seed set. Full complete commentary load is planned.</p>
-          )}
-          {henryNotes.length > 0 && henryVerse != null && !henrySelected && (
-            <p>No Matthew Henry note on verse {henryVerse} in the seed set. Full complete commentary load is planned.</p>
-          )}
-          {henryNotes.map((n) => (
-            <section
-              key={`${n.bookSlug}-${n.chapter}-${n.verse}`}
-              id={`henry-${n.verse}`}
-              className={henrySelected?.verse === n.verse ? 'note-on' : undefined}
-            >
-              <h2>
-                {bookName} {n.chapter}:{n.verse}
-                {n.range && n.range !== String(n.verse) ? ` (on ${n.range})` : ''}
-              </h2>
-              <p>{n.body}</p>
-            </section>
-          ))}
-        </div>
-      )}
-
-      {tab === 'dictionary' && (
-        <div className="panel">
-          <p className="source-line">Easton’s Bible Dictionary (public domain)</p>
-          {dict.length === 0 && <p>No dictionary entry linked to this verse yet.</p>}
-          {dict.map((d) => (
-            <section key={d.slug}>
-              <h2>{d.name}</h2>
-              <p>{d.body}</p>
-            </section>
-          ))}
-        </div>
-      )}
-
-      {tab === 'topics' && (
-        <div className="panel">
-          <p className="source-line">Nave’s Topical Bible (public domain)</p>
-          {related.length === 0 && <p>No Nave’s topic linked yet.</p>}
-          <ul className="refs">
-            {related.map((t) => (
-              <li key={t.slug}>
-                <Link to={`/topics/${t.slug}`}>{t.name}</Link>
-                <span> — {t.summary}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {tab === 'robertson' && (
-        <div className="panel">
-          <p className="source-line">{ROBERTSON_SOURCE}</p>
-          {!rwpBook && (
-            <p>Robertson on this book will be added when those volumes are public domain.</p>
-          )}
-          {rwpBook && rwpMarked.length === 0 && (
-            <p>No Robertson note on this chapter in the seed set.</p>
-          )}
-          {rwpBook &&
-            rwpMarked.map((n) => (
-              <section
-                key={n.key}
-                id={`rwp-${n.letter}`}
-                className={openRwp === n.key ? 'note-on' : undefined}
-              >
-                <h2>
-                  <span className="callout-label">{n.letter}</span> {bookName} {n.chapter}:{n.verse}
-                  {n.heading ? ` — ${n.heading}` : ''}
-                  {n.word ? ` (“${n.word}”)` : ''}
-                </h2>
-                <p>{n.body}</p>
-              </section>
-            ))}
-        </div>
+      {sheetOpen && sheetVerse != null && (
+        <>
+          <button type="button" className="notes-backdrop" aria-label="Close notes" onClick={closeSheet} />
+          <NotesSheet
+            bookName={bookName}
+            bookSlug={bookSlug}
+            chapter={chapter}
+            verse={sheetVerse}
+            scofield={sheetNotes}
+            henry={sheetHenry}
+            dict={sheetDict}
+            topics={sheetTopics}
+            robertson={sheetRwp}
+            focus={sheetFocus}
+            highlightKey={highlightKey}
+            onClose={closeSheet}
+          />
+        </>
       )}
     </article>
   )
