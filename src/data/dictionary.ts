@@ -1,3 +1,4 @@
+import easton from './easton.json' with { type: 'json' }
 import { findVerse, isKnownBook, resolveBookSlug } from './kjv'
 
 export type DictEntry = {
@@ -6,137 +7,12 @@ export type DictEntry = {
   aliases: string[]
   body: string
   source: 'Easton' | 'Smith'
+  sensitive?: string[]
+  topic?: boolean
 }
 
-/** Public-domain dictionary seeds (Easton 1897 / Smith). No Vine, Wuest, Unger, or modern works. */
-export const DICTIONARY: DictEntry[] = [
-  {
-    slug: 'faith',
-    name: 'Faith',
-    aliases: [],
-    source: 'Easton',
-    body: 'Faith is in general the persuasion of the mind that a certain statement is true. Its primary idea is trust. In the New Testament it is trust in Christ as the Saviour.',
-  },
-  {
-    slug: 'grace',
-    name: 'Grace',
-    aliases: [],
-    source: 'Easton',
-    body: 'Grace is the free unmerited love and favor of God. Saving grace is the work of the Spirit in calling, renewing, and keeping the believer.',
-  },
-  {
-    slug: 'prayer',
-    name: 'Prayer',
-    aliases: [],
-    source: 'Easton',
-    body: 'Prayer is converse with God. It includes adoration, confession, thanksgiving, and petition.',
-  },
-  {
-    slug: 'hope',
-    name: 'Hope',
-    aliases: [],
-    source: 'Easton',
-    body: 'Hope is an expectation of future good. In Scripture it is the confident waiting for what God has promised.',
-  },
-  {
-    slug: 'shepherd',
-    name: 'Shepherd',
-    aliases: [],
-    source: 'Easton',
-    body: 'A frequent figure for the care of God and of Christ over His people. "The Lord is my shepherd."',
-  },
-  {
-    slug: 'word',
-    name: 'Word',
-    aliases: ['the Word'],
-    source: 'Easton',
-    body: 'Used of the revelation of God, and as a title of Christ: "the Word was God."',
-  },
-  {
-    slug: 'rest',
-    name: 'Rest',
-    aliases: [],
-    source: 'Easton',
-    body: 'The Sabbath rest; also the rest Christ gives to the weary who come to Him.',
-  },
-  {
-    slug: 'nicodemus',
-    name: 'Nicodemus',
-    aliases: [],
-    source: 'Easton',
-    body: 'The people is victor, a Pharisee and a member of the Sanhedrin. He is first noticed as visiting Jesus by night (John 3:1-21) for the purpose of learning more of his doctrines, which our Lord then unfolded to him, giving prominence to the necessity of being "born again." He is next met with in the Sanhedrin (John 7:50-52), where he protested against the course they were taking in plotting against Christ. Once more he is mentioned as taking part in the preparation for the anointing and burial of the body of Christ (John 19:39).',
-  },
-  {
-    slug: 'pharisees',
-    name: 'Pharisees',
-    aliases: ['Pharisee'],
-    source: 'Easton',
-    body: 'Separatists (Heb. persahin, from parash, "to separate"). They were probably the successors of the Assideans (i.e., the "pious"). In the time of our Lord they were the popular party. They were extremely accurate and minute in all matters appertaining to the law of Moses. From the very beginning of his ministry the Pharisees showed themselves bitter and persistent enemies of our Lord.',
-  },
-  {
-    slug: 'jerusalem',
-    name: 'Jerusalem',
-    aliases: ['Salem'],
-    source: 'Easton',
-    body: 'Called also Salem, Ariel, Jebus, the "city of God," the "holy city." This name is in the original in the dual form, and means "possession of peace," or "foundation of peace." It is first mentioned in Scripture under the name Salem (Genesis 14:18). David drove out the Jebusites and fixed his dwelling on Zion, which he called "the city of David."',
-  },
-  {
-    slug: 'judea',
-    name: 'Judea',
-    aliases: ['Judaea'],
-    source: 'Easton',
-    body: 'After the Captivity this name was applied to the whole of the country west of the Jordan (Haggai 1:1, 14; 2:2). But under the Romans, in the time of Christ, it denoted the southernmost of the three divisions of Palestine (Matthew 2:1, 5; 3:1; 4:25), although it was also sometimes used for Palestine generally (Acts 28:21).',
-  },
-  {
-    slug: 'galilee',
-    name: 'Galilee',
-    aliases: [],
-    source: 'Easton',
-    body: 'Circuit. In later times this name was especially given to the whole region north of Samaria. In the time of our Lord there were three regions in Palestine, Judea, Samaria, and Galilee. Galilee occupied the whole northern section of the country.',
-  },
-  {
-    slug: 'moses',
-    name: 'Moses',
-    aliases: [],
-    source: 'Easton',
-    body: 'Drawn (or Egypt. mesu, "son"). In the New Testament he is referred to as the representative of the law and as a type of Christ (John 1:17; Hebrews 3:5, 6). Moses is the only character in the Old Testament to whom Christ likens himself (John 5:46; compare Deuteronomy 18:15). "There arose not a prophet since in Israel like unto Moses, whom the Lord knew face to face."',
-  },
-  {
-    slug: 'abraham',
-    name: 'Abraham',
-    aliases: ['Abram'],
-    source: 'Easton',
-    body: 'Father of a multitude, son of Terah, named (Genesis 11:27) before his older brothers Nahor and Haran, because he was the heir of the promises. Till the age of seventy, Abram sojourned among his kindred in his native country of Chaldea. He is called "the friend of God" (James 2:23), "faithful Abraham" (Galatians 3:9), "the father of us all" (Romans 4:16).',
-  },
-  {
-    slug: 'israel',
-    name: 'Israel',
-    aliases: ['Israelites'],
-    source: 'Easton',
-    body: 'The name conferred on Jacob after the great prayer-struggle at Peniel (Genesis 32:28), because "as a prince he had power with God and prevailed." This is the common name given to Jacob\'s descendants. The whole people of the twelve tribes are called "Israelites," the "children of Israel," and the "house of Israel." After the Exile the name Israel was assumed as designating the entire nation.',
-  },
-  {
-    slug: 'sabbath',
-    name: 'Sabbath',
-    aliases: [],
-    source: 'Easton',
-    body: '(Heb. shabbath, meaning "to rest from labour"), the day of rest. It is first mentioned as having been instituted in Paradise, when man was in innocence (Genesis 2:2, 3). "The sabbath was made for man," as a day of rest and refreshment for the body and of blessing to the soul.',
-  },
-  {
-    slug: 'spirit',
-    name: 'Spirit',
-    aliases: ['Holy Ghost', 'Holy Spirit'],
-    source: 'Easton',
-    body: 'The Holy Ghost. His personality is proved from the fact that the attributes of personality, as intelligence and volition, are ascribed to him (John 14:17, 26; 15:26). He reproves, helps, glorifies, intercedes (John 16:7-13; Romans 8:26). His divinity is established from the names of God ascribed to him, and from divine attributes: omnipresence, omniscience, omnipotence, eternity. Creation is ascribed to him (Genesis 1:2), and worship is required and ascribed to him (Matthew 28:19).',
-  },
-  {
-    slug: 'jordan',
-    name: 'Jordan',
-    aliases: [],
-    source: 'Easton',
-    body: 'The river of Palestine. It originates in the snows of Hermon, which feed its perennial fountains. From the Sea of Galilee it flows through a long, low plain called "the region of Jordan" (Matthew 3:5), down to the Dead Sea. The chief events in gospel history connected with it are John the Baptist\'s ministry, and that Jesus "was baptized of John in Jordan" (Mark 1:9).',
-  },
-]
+/** Public-domain dictionary (Easton 1897, Smith only when Easton has no headword). */
+export const DICTIONARY: DictEntry[] = easton as DictEntry[]
 
 export type DictSpan = {
   start: number
@@ -145,18 +21,56 @@ export type DictSpan = {
   entry: DictEntry
 }
 
-function labelsOf(d: DictEntry) {
-  return [d.name, ...d.aliases].filter(Boolean)
+const SENSITIVE_WORD = new Map<string, DictEntry>()
+const ANY_WORD = new Map<string, DictEntry>()
+
+function addLabel(text: string, entry: DictEntry, sensitive: boolean) {
+  if (sensitive) SENSITIVE_WORD.set(text, entry)
+  else {
+    const key = text.toLowerCase()
+    if (!ANY_WORD.has(key)) ANY_WORD.set(key, entry)
+  }
 }
 
-function caseSensitiveLabel(label: string) {
-  return label === 'Spirit'
+for (const entry of DICTIONARY) {
+  const sensitive = new Set(entry.sensitive ?? [])
+  addLabel(entry.name, entry, sensitive.has(entry.name))
+  for (const alias of entry.aliases) {
+    addLabel(alias, entry, sensitive.has(alias))
+  }
 }
 
-function labelRegex(label: string) {
-  const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')
-  const flags = caseSensitiveLabel(label) ? 'gu' : 'giu'
-  return new RegExp(`(?<!\\p{L})${escaped}(?!\\p{L})`, flags)
+const TITLE_SKIP = new Set([
+  'god',
+  'jesus',
+  'christ',
+  'lord',
+  'jehovah',
+  'yahweh',
+  'father',
+  'son',
+  'holy',
+  'amen',
+  'prince',
+  'everlasting',
+  'mighty',
+  'wonderful',
+])
+
+function peelPossessive(token: string) {
+  return token.replace(/['’]s?$/u, '')
+}
+
+function resolvePhrase(phrase: string) {
+  const peeled = peelPossessive(phrase)
+  const sensitive = SENSITIVE_WORD.get(peeled) ?? SENSITIVE_WORD.get(phrase)
+  if (sensitive) return sensitive
+  const entry = ANY_WORD.get(peeled.toLowerCase()) ?? ANY_WORD.get(phrase.toLowerCase())
+  if (!entry) return undefined
+  if (entry.topic || /\s/.test(phrase)) return entry
+  if (TITLE_SKIP.has(peeled.toLowerCase())) return undefined
+  if (!/^\p{Lu}/u.test(phrase)) return undefined
+  return entry
 }
 
 export function findDict(slug: string) {
@@ -165,40 +79,49 @@ export function findDict(slug: string) {
 
 export function dictForWord(word: string, linked?: DictEntry[]) {
   const pool = linked && linked.length ? linked : DICTIONARY
+  const peeled = peelPossessive(word)
+  const sensitive = SENSITIVE_WORD.get(peeled)
+  if (sensitive && pool.some((d) => d.slug === sensitive.slug)) return sensitive
+  const any = ANY_WORD.get(peeled.toLowerCase())
+  if (any && pool.some((d) => d.slug === any.slug)) {
+    if (any.topic || peeled.includes(' ') || /^\p{Lu}/u.test(word) || word !== peeled) return any
+  }
   for (const d of pool) {
-    for (const label of labelsOf(d)) {
+    for (const label of [d.name, ...d.aliases]) {
       if (label.includes(' ')) continue
-      if (caseSensitiveLabel(label)) {
+      if ((d.sensitive ?? []).includes(label)) {
         if (word === label) return d
         continue
       }
-      if (label.toLowerCase() === word.toLowerCase()) return d
+      if (label.toLowerCase() === peeled.toLowerCase()) return d
     }
   }
   return undefined
 }
 
 export function dictSpansInText(text: string): DictSpan[] {
+  const tokens: { t: string; start: number; end: number }[] = []
+  const re = /\p{L}[\p{L}’']*/gu
+  for (const m of text.matchAll(re)) {
+    if (m.index == null) continue
+    tokens.push({ t: m[0], start: m.index, end: m.index + m[0].length })
+  }
   const found: DictSpan[] = []
-  const needles: { label: string; entry: DictEntry }[] = []
-  for (const entry of DICTIONARY) {
-    for (const label of labelsOf(entry)) {
-      needles.push({ label, entry })
+  const taken = new Array(tokens.length).fill(false)
+  for (let i = 0; i < tokens.length; i++) {
+    if (taken[i]) continue
+    for (let n = Math.min(4, tokens.length - i); n >= 1; n--) {
+      const slice = tokens.slice(i, i + n)
+      const phrase = slice.map((s) => s.t).join(' ')
+      const entry = resolvePhrase(phrase)
+      if (!entry) continue
+      const start = slice[0].start
+      const end = slice[n - 1].end
+      found.push({ start, end, matched: text.slice(start, end), entry })
+      for (let k = 0; k < n; k++) taken[i + k] = true
+      break
     }
   }
-  needles.sort((a, b) => b.label.length - a.label.length)
-
-  for (const { label, entry } of needles) {
-    const re = labelRegex(label)
-    for (const m of text.matchAll(re)) {
-      if (m.index == null) continue
-      const start = m.index
-      const end = start + m[0].length
-      if (found.some((s) => start < s.end && end > s.start)) continue
-      found.push({ start, end, matched: m[0], entry })
-    }
-  }
-  found.sort((a, b) => a.start - b.start)
   return found
 }
 
@@ -232,6 +155,7 @@ export function bibleVerseHref(bookSlug: string, chapter: number, verse: number)
 }
 
 const NOTE_DICT_SKIP = new Set(['faith', 'grace', 'hope', 'prayer', 'rest', 'shepherd'])
+
 export function linkBodyBits(body: string, fromBook: string, fromChapter: number): LinkedBit[] {
   type Hit = { start: number; end: number; bit: Exclude<LinkedBit, { type: 'text' }> }
   const hits: Hit[] = []
@@ -266,7 +190,7 @@ export function linkBodyBits(body: string, fromBook: string, fromChapter: number
   }
 
   for (const span of dictSpansInText(body)) {
-    if (NOTE_DICT_SKIP.has(span.entry.slug)) continue
+    if (NOTE_DICT_SKIP.has(span.entry.slug) || span.entry.topic) continue
     if (hits.some((h) => span.start < h.end && span.end > h.start)) continue
     hits.push({
       start: span.start,
