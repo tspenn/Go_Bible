@@ -55,6 +55,12 @@ const TITLE_SKIP = new Set([
   'everlasting',
   'mighty',
   'wonderful',
+  'king',
+  'heaven',
+  'darkness',
+  'day',
+  'sea',
+  'man',
 ])
 
 function peelPossessive(token: string) {
@@ -117,6 +123,10 @@ export function dictSpansInText(text: string): DictSpan[] {
       if (!entry) continue
       const start = slice[0].start
       const end = slice[n - 1].end
+      if (entry.slug === 'rest') {
+        const before = text.slice(Math.max(0, start - 5), start).toLowerCase()
+        if (/\bthe\s*$/.test(before)) continue
+      }
       found.push({ start, end, matched: text.slice(start, end), entry })
       for (let k = 0; k < n; k++) taken[i + k] = true
       break

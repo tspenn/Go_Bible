@@ -36,6 +36,7 @@ const SKIP_NAMES = new Set(
   whoever whatever wherever however therefore because according concerning
   now out please arise leave return everything afterward increase one high walk
   pairs ben isn't don't almighty prince everlasting mighty wonderful
+  king heaven darkness day sea
   `.trim().split(/\s+/),
 )
 
@@ -198,18 +199,38 @@ const EXTRA_ALIASES = {
   Elijah: ['Elias'],
   Isaiah: ['Esaias'],
   Counsellor: ['Wonderful Counselor'],
+  Comforter: ['another Counselor', 'the Counselor'],
   Lamb: ['Lamb of God'],
   'Word of God': ['the word of God'],
+  'Word, The': ['the Word', 'The Word'],
+  'John the Baptist': ['John the Baptizer', 'Baptizer'],
+  Mede: ['Medes'],
+  Crete: ['Cretan', 'Cretans'],
   AEnon: ['Enon', 'Aenon'],
   Peter: ['Simon Peter'],
 }
 
-const SKIP_TERMS = new Set(['Spirit', 'Spirit, Holy', 'A', 'Ah!', 'Aha!', 'Hail!'])
+const SKIP_TERMS = new Set([
+  'Spirit',
+  'Spirit, Holy',
+  'A',
+  'Ah!',
+  'Aha!',
+  'Hail!',
+  'Heaven',
+  'Darkness',
+  'Day',
+  'King',
+  'Sea, The',
+  'Son of God',
+  'Son of man',
+  'Man',
+])
 
 /** Labels that must match case (title / Logos / Holy Spirit as Spirit). */
 const SENSITIVE = {
   'Holy Ghost': ['Spirit'],
-  'Word, The': ['Word'],
+  'Word, The': ['Word', 'the Word', 'The Word'],
 }
 
 function makeEntry(term, defs, source) {
@@ -278,6 +299,10 @@ markUsed(lookup('Word'))
 markUsed(lookup('word of God'))
 markUsed(lookup('Enon'))
 markUsed(lookup('Salim'))
+markUsed(lookup('Comforter'))
+markUsed(lookup('John the Baptist'))
+markUsed(lookup('Mede'))
+markUsed(lookup('Crete'))
 
 function peel(token) {
   const m = token.match(/^([A-Za-z][A-Za-z'’\-]*?)(?:['’]s)?$/)
