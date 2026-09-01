@@ -118,3 +118,48 @@ export const MORE_STARTERS: StarterTopic[] = [
     scofield: { bookSlug: '2-corinthians', chapter: 5, verse: 7, label: 'walk by faith' },
   },
 ]
+
+export const MORE_NAVE_STARTERS: StarterTopic[] = [
+  {
+    id: 'atonement',
+    title: 'Atonement',
+    naveSlug: 'atonement',
+    naveName: 'Atonement',
+    scofield: { bookSlug: 'leviticus', chapter: 16, verse: 6, label: 'Atonement' },
+  },
+  {
+    id: 'forgiveness',
+    title: 'Forgiveness',
+    naveSlug: 'forgiveness',
+    naveName: 'Forgiveness',
+    scofield: { bookSlug: 'matthew', chapter: 6, verse: 12, label: 'we forgive our debtors' },
+  },
+  {
+    id: 'hope',
+    title: 'Hope',
+    naveSlug: 'hope',
+    naveName: 'Hope',
+    scofield: { bookSlug: '1-thessalonians', chapter: 1, verse: 3, label: 'work of faith' },
+  },
+  {
+    id: 'love',
+    title: 'Love',
+    naveSlug: 'love',
+    naveName: 'Love',
+    scofield: { bookSlug: '2-john', chapter: 1, verse: 5, label: 'that we love one another' },
+  },
+  {
+    id: 'word-of-god',
+    title: 'Word of God',
+    naveSlug: 'word-of-god',
+    naveName: 'Word of God',
+    scofield: { bookSlug: 'jeremiah', chapter: 2, verse: 1, label: 'word of the Lord' },
+  },
+  {
+    id: 'names-of-god',
+    title: 'Names of God',
+    naveSlug: 'names-of-god',
+    naveName: 'Names of God',
+    scofield: { bookSlug: 'genesis', chapter: 17, verse: 1, label: 'Almighty God' },
+  },
+]

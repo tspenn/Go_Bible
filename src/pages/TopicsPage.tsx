@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from '../App'
 import { bookName } from '../data/kjv'
-import { MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
+import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import {
   searchStudy,
   STUDY_LABELS,
@@ -23,12 +23,12 @@ function StarterList({ items }: { items: StarterTopic[] }) {
             {t.title}
           </Link>
           <p className="starter-links">
-            <Link to={`/topics/${t.naveSlug}`}>Nave’s: {t.naveName}</Link>
+            <Link to={`/topics/${t.naveSlug}`}>{t.naveName}</Link>
             <span aria-hidden="true"> · </span>
             <Link
               to={`/bible/${t.scofield.bookSlug}/${t.scofield.chapter}/${t.scofield.verse}?tab=scofield`}
             >
-              Scofield: {scofieldLabel(t)}, {t.scofield.label}
+              {scofieldLabel(t)}, {t.scofield.label}
             </Link>
           </p>
         </li>
@@ -88,21 +88,18 @@ export function TopicsPage({ search = '' }: { search?: string }) {
 
   return (
     <article className="page">
-      <p className="eyebrow">Nave’s, Scofield, Henry, TSK, and Easton</p>
       <h1>Topics</h1>
       <input
         className="search-input"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search Nave’s, Scofield, Henry, TSK, and Easton"
-        aria-label="Search Nave’s, Scofield, Henry, TSK, and Easton"
+        placeholder="Search topics"
+        aria-label="Search topics"
       />
       {searching ? (
         <>
           {loading && !results ? <p className="lead">Searching…</p> : null}
-          {results && total === 0 ? (
-            <p>No matches in Nave’s, Scofield, Henry, TSK, or Easton.</p>
-          ) : null}
+          {results && total === 0 ? <p>No matching topics.</p> : null}
           {results
             ? STUDY_ORDER.map((src) =>
                 results[src].length > 0 ? (
@@ -120,6 +117,8 @@ export function TopicsPage({ search = '' }: { search?: string }) {
           <StarterList items={STARTER_TOPICS} />
           <h2>Also worth opening</h2>
           <StarterList items={MORE_STARTERS} />
+          <h2>More topics</h2>
+          <StarterList items={MORE_NAVE_STARTERS} />
         </>
       )}
     </article>

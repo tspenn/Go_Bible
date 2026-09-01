@@ -187,11 +187,11 @@ export async function searchStudy(q: string): Promise<StudyResults> {
 }
 
 export const STUDY_LABELS: Record<StudySource, string> = {
-  naves: 'Nave’s Topical Bible, 1896',
-  scofield: 'Scofield Reference Bible, 1917',
-  henry: 'Matthew Henry, Exposition',
-  tsk: 'Treasury of Scripture Knowledge',
-  easton: 'Easton’s Bible Dictionary, 1897',
+  naves: 'Topics',
+  scofield: 'Notes',
+  henry: 'Commentary',
+  tsk: 'See also',
+  easton: 'Dictionary',
 }
 
 export const STUDY_ORDER: StudySource[] = ['naves', 'scofield', 'henry', 'tsk', 'easton']
