@@ -286,7 +286,7 @@ function TskSeeAlso({ groups, focus }: { groups: TskGroup[]; focus: SheetFocus }
   return (
     <section id="sheet-tsk" className={focus === 'tsk' ? 'note-on' : undefined}>
       <p className="source-line">{TSK_SOURCE}</p>
-      {total === 0 && <p>No Treasury of Scripture Knowledge references on this verse in the seed set yet.</p>}
+      {total === 0 && <p>No Treasury of Scripture Knowledge references on this verse.</p>}
       {shown.map((g, gi) => (
         <div key={`${g.sortOrder}-${g.kjvPhrase}-${gi}`}>
           {tskHeading(g) ? <h3>{tskHeading(g)}</h3> : null}

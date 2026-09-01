@@ -16,7 +16,7 @@ import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
 import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
 import { mineGlyph, notesForVerse, useMarks, washesForVerse, type UserNote } from '../data/marks'
-import { tskForVerse } from '../data/tsk'
+import { tskForVerse, ensureTskBook, useTsk } from '../data/tsk'
 import { useAuth } from '../lib/auth'
 import { parseVerseQuery } from '../router'
 
@@ -35,6 +35,10 @@ export function VersePage({
 }) {
   const { user } = useAuth()
   const marks = useMarks()
+  useTsk()
+  useEffect(() => {
+    void ensureTskBook(bookSlug)
+  }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
   const focus = verse ?? selected?.verse

@@ -1,17 +1,16 @@
 /**
  * Original Treasury of Scripture Knowledge (Canne, Browne, Blayney, Scott, ~1880).
  * Source: JustVerses TSK dump (public domain verse lists + KJV anchor phrases).
- * Not expanded TSKe marketing text.
+ * Not expanded TSKe marketing text. WEB phrase filled only when the KJV anchor
+ * already sits in our WEB (LORD) line — never invented.
  *
- * Seed (default): John 3, Matthew 4, 2 Corinthians 5, Hebrews 11, Psalm 23
- *   -> src/data/tsk.json for the reader.
+ * Full load (default): every book -> src/data/tsk-books/{slug}.json
+ * Seed overlay kept in src/data/tsk.json (John 3, Matthew 4, 2 Corinthians 5,
+ * Hebrews 11, Psalm 23). Full book files replace those verses when present.
  *
- * Full load into Supabase public.tsk (later):
- *   1. Keep tskxref.txt in scripts/raw/ (gitignored).
- *   2. node scripts/ingest-tsk.mjs --all-sql
- *   3. Apply tmp-web/tsk-full.sql as a data migration (RLS already allows SELECT).
- * The app keeps reading the local seed so logged-out John 3 still works
- * until the full table is loaded and the client is pointed at it.
+ *   node scripts/ingest-tsk.mjs
+ *   node scripts/ingest-tsk.mjs --seed     (rewrite tsk.json only)
+ *   node scripts/ingest-tsk.mjs --all-sql  (tmp-web/tsk-full.sql for Supabase)
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -293,27 +292,60 @@ function toSql(groups) {
   return chunks.join('\n\n')
 }
 
-const all = process.argv.includes('--all-sql')
-const groups = parseTsk(all)
-const payload = {
-  source:
-    'Treasury of Scripture Knowledge (Canne, Browne, Blayney, Scott, and others, ca. 1880). Public domain. Original verse lists and KJV anchor phrases from the JustVerses TSK dump.',
-  seed: all
-    ? 'all'
-    : [
+const seedOnly = process.argv.includes('--seed')
+const wantSql = process.argv.includes('--all-sql')
+const groups = parseTsk(!seedOnly)
+const source =
+  'Treasury of Scripture Knowledge (Canne, Browne, Blayney, Scott, and others, ca. 1880). Public domain. Original verse lists and KJV anchor phrases from the JustVerses TSK dump.'
+const verses = new Set(groups.map((g) => `${g.bookSlug}:${g.chapter}:${g.verse}`))
+
+if (seedOnly) {
+  writeFileSync(
+    outJson,
+    `${JSON.stringify({
+      source,
+      seed: [
         ['john', 3],
         ['matthew', 4],
         ['2-corinthians', 5],
         ['hebrews', 11],
         ['psalms', 23],
       ],
-  groups,
+      groups,
+    })}\n`,
+  )
+  console.log(`Wrote ${groups.length} TSK seed groups to src/data/tsk.json`)
+} else {
+  const booksDir = join(root, 'src', 'data', 'tsk-books')
+  mkdirSync(booksDir, { recursive: true })
+  const byBook = new Map()
+  for (const g of groups) {
+    const list = byBook.get(g.bookSlug) ?? []
+    list.push(g)
+    byBook.set(g.bookSlug, list)
+  }
+  for (const [slug, list] of byBook) {
+    writeFileSync(join(booksDir, `${slug}.json`), `${JSON.stringify({ source, groups: list })}\n`)
+  }
+  writeFileSync(
+    join(root, 'src', 'data', 'tsk-index.json'),
+    `${JSON.stringify({
+      source,
+      books: [...byBook.keys()].sort(),
+      groups: groups.length,
+      verses: verses.size,
+    })}\n`,
+  )
+  console.log(`Wrote ${groups.length} TSK groups covering ${verses.size} verses in ${byBook.size} books`)
+  for (const sample of ['genesis:1:1', 'psalms:23:1', 'john:3:16']) {
+    const n = groups.filter((g) => `${g.bookSlug}:${g.chapter}:${g.verse}` === sample).length
+    console.log(`  sample ${sample} groups=${n}`)
+  }
 }
 
-writeFileSync(outJson, `${JSON.stringify(payload)}\n`)
-console.log(`Wrote ${groups.length} TSK groups to src/data/tsk.json`)
-
-mkdirSync(join(root, 'tmp-web'), { recursive: true })
-const sqlPath = join(root, 'tmp-web', all ? 'tsk-full.sql' : 'tsk-seed.sql')
-writeFileSync(sqlPath, `${toSql(groups)}\n`)
-console.log(`Wrote SQL to ${sqlPath}`)
+if (wantSql) {
+  mkdirSync(join(root, 'tmp-web'), { recursive: true })
+  const sqlPath = join(root, 'tmp-web', seedOnly ? 'tsk-seed.sql' : 'tsk-full.sql')
+  writeFileSync(sqlPath, `${toSql(groups)}\n`)
+  console.log(`Wrote SQL to ${sqlPath}`)
+}
