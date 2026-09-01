@@ -271,7 +271,7 @@ export function NotesSheet({
               className={highlightKey === n.key ? 'note-on' : undefined}
             >
               <h3>
-                <span className="callout-label">{n.letter}</span>
+                <span className="callout-label rwp-callout">{n.letter}</span>
                 {n.heading ? ` ${n.heading}` : ''}
                 {n.word ? ` (“${n.word}”)` : ''}
               </h3>

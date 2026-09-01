@@ -173,18 +173,24 @@ function WordBits({
       : -1
     const mark = markAt >= 0 ? leftover.splice(markAt, 1)[0] : undefined
     const letter = mark ? (
-      <button type="button" className="callout" title={mark.title} onClick={mark.onOpen}>
+      <button
+        type="button"
+        className="callout rwp-callout"
+        title={mark.title}
+        onClick={mark.onOpen}
+      >
         {mark.letter}
       </button>
     ) : null
     const phrase = peeled?.core ?? bit
     const hold = onMark ? (x: number, y: number) => onMark(phrase, x, y) : undefined
+    const hitClass = mark ? 'word-hit rwp-word' : 'word-hit'
 
     if (peeled && (entry || dictHit)) {
       return (
         <span key={i}>
           <Pressable
-            className="word-hit"
+            className={hitClass}
             onHold={hold}
             onShort={(x, y) => {
               if (entry) {
@@ -204,7 +210,11 @@ function WordBits({
     }
     return (
       <span key={i}>
-        <Pressable className="word-hit" onHold={hold}>
+        <Pressable
+          className={hitClass}
+          onHold={hold}
+          onShort={mark ? () => mark.onOpen() : undefined}
+        >
           {bit}
         </Pressable>
         {letter}
@@ -307,6 +317,7 @@ export function VerseWords({
     const scoHere = sco.find((r) => r.start <= from && r.end >= to)
     const dictHere = names.find((r) => r.start <= from && r.end >= to)
     const henryHere = henry.find((r) => r.start <= from && r.end >= to)
+    const rwpHere = rwpSpans.find((r) => r.start <= from && r.end >= to)
     const washHere = washSpans.find((r) => r.start <= from && r.end >= to)
     const style = washHere ? { backgroundColor: washHere.color } : undefined
     const holdPhrase = scoHere?.mark.phrase ?? dictHere?.matched ?? slice.trim()
@@ -364,6 +375,20 @@ export function VerseWords({
           {slice}
         </Pressable>,
       )
+    } else if (rwpHere) {
+      chunks.push(
+        <Pressable
+          key={`r${from}-${rwpHere.mark.letter}`}
+          as="button"
+          className="rwp-word"
+          title={rwpHere.mark.title}
+          style={style}
+          onHold={hold}
+          onShort={() => rwpHere.mark.onOpen()}
+        >
+          {slice}
+        </Pressable>,
+      )
     } else {
       chunks.push(
         <span key={`t${from}`} className={washHere ? 'word-wash' : undefined} style={style}>
@@ -397,7 +422,7 @@ export function VerseWords({
         <button
           key={`rcall-${mark.mark.letter}-${to}`}
           type="button"
-          className="callout"
+          className="callout rwp-callout"
           title={mark.mark.title}
           onClick={mark.mark.onOpen}
         >

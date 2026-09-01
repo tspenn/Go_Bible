@@ -301,7 +301,7 @@ export function VersePage({
 
         <div className="chapter">
           <p className="source-line">
-            {SOURCE_LINE} Verse numbers open notes. Small letters open Scofield or Robertson.
+            {SOURCE_LINE} Verse numbers open notes. Gold letters are Scofield. Blue words in Matthew–Acts are Robertson.
           </p>
           {list.map((v) => {
             const marksOnVerse = byVerse.get(v.verse) ?? []
@@ -388,7 +388,7 @@ export function VersePage({
                   <button
                     key={n.key}
                     type="button"
-                    className="callout"
+                    className="callout rwp-callout"
                     title={n.heading ? `Robertson: ${n.heading}` : 'Robertson note'}
                     onClick={() => openRobertson(n)}
                   >

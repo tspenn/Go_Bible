@@ -1,6 +1,7 @@
 :root {
   --blue: #8fa3b5;
   --blue-deep: #6f8496;
+  --rwp: #3d6b8a;
   --cream: #f7f5f2;
   --text: #3d3d3d;
   --gold: #c9a66b;
@@ -467,6 +468,30 @@ button.sco-phrase.dict-hit {
   border-bottom: 1px dotted var(--gold);
   box-shadow: 0 2px 0 var(--blue-deep);
 }
+.rwp-word {
+  color: var(--rwp);
+}
+button.rwp-word {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--rwp);
+  cursor: pointer;
+  border-radius: 0;
+}
+button.rwp-word:hover,
+.rwp-word:hover {
+  color: var(--blue-deep);
+}
+button.callout.rwp-callout {
+  color: var(--rwp);
+}
+button.callout.rwp-callout:hover {
+  color: var(--blue-deep);
+}
 .see-also { font-size: 0.95rem; }
 .strongs-card {
   position: fixed;
@@ -766,6 +791,9 @@ a.ribbon-btn {
   font-family: var(--serif);
   font-style: italic;
   color: var(--gold);
+}
+.callout-label.rwp-callout {
+  color: var(--rwp);
 }
 
 .notes-backdrop {
