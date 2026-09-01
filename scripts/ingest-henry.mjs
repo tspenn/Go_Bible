@@ -226,6 +226,22 @@ for (const f of files) {
   writeFileSync(join(outDir, `${slug}.json`), `${JSON.stringify({ source: SOURCE, notes })}\n`)
 }
 
+const sosPath = join(outDir, 'song-of-solomon.json')
+if (existsSync(sosPath)) {
+  const sosNotes = JSON.parse(readFileSync(sosPath, 'utf8')).notes ?? []
+  books.push('song-of-solomon')
+  added += sosNotes.length
+  for (const n of sosNotes) {
+    if (n.range === 'intro') {
+      verses.add(`${n.bookSlug}:${n.chapter}:${n.verse}`)
+      continue
+    }
+    const pair = rangePair(n.range, n.verse)
+    const [a, b] = pair ?? [n.verse, n.verse]
+    for (let v = a; v <= b; v++) verses.add(`${n.bookSlug}:${n.chapter}:${v}`)
+  }
+}
+
 writeFileSync(
   join(root, 'src', 'data', 'henry-index.json'),
   `${JSON.stringify({
@@ -235,7 +251,7 @@ writeFileSync(
     skippedSeedOverlaps: skipped,
     books: books.sort(),
     verses: verses.size,
-    missing: ['song-of-solomon'],
+    missing: existsSync(sosPath) ? [] : ['song-of-solomon'],
   })}\n`,
 )
 
