@@ -32,6 +32,7 @@ export function SettingsPage() {
       <h2>Notes in the text</h2>
       <ul className="how-to">
         <li>Tap a verse number to open Scofield, Henry, See also (Treasury of Scripture Knowledge), dictionary, topics, and (in Matthew–Acts) Robertson.</li>
+        <li>Topics open Nave’s with the Bible verses written out under each heading, so you can read them in one place.</li>
         <li>Select two or more words in the chapter, then right-click (on a phone, press the selection). Choose Highlight, Share, Note, See Commentary, or Copy. The words stay marked while the menu is open. Share uses your device share sheet. Highlight opens the pen colors. See Commentary opens Matthew Henry from those words, not a download panel.</li>
         <li>Gold italic letters a, b, c are 1917 Scofield notes. Tap the letter or the marked phrase.</li>
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
@@ -49,6 +50,7 @@ export function SettingsPage() {
         <li>Your notes show a ★ (or 1, 2, 3 if you have more than one on that verse). They are not Scofield letters.</li>
         <li>Tap ★ to open My note in the panel.</li>
         <li>You stay signed in across tab close, browser close, and iPad sleep. Sign out only if you tap Sign out.</li>
+        <li>In Notebook, choose Download text or Download Word for a Sunday School file of your verses, marks, and notes.</li>
       </ul>
       <p>
         {user ? (

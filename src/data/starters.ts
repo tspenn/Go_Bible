@@ -3,6 +3,7 @@ export const MAGAZINE_LABEL = 'Walking by Faith Magazine'
 export const MAGAZINE_BLURB = 'Articles on basic questions and an extensive prayer list.'
 export const STORE_URL = 'https://faith.skylandpublishing.com/catalog'
 export const TAGLINE = 'A Bible tool made for reading.'
+export const SUPPORT_EMAIL = 'support@skylandapps.com'
 
 export type StarterTopic = {
   id: string

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '../App'
 import {
   bookmarkHref,
@@ -15,9 +16,32 @@ import { useAuth } from '../lib/auth'
 export function NotebookPage() {
   const { ready, user } = useAuth()
   const marks = useMarks()
+  const [busy, setBusy] = useState<'text' | 'word' | null>(null)
+  const [exportError, setExportError] = useState('')
   const subjects = [...new Set(marks.notes.map((n) => n.subject).filter(Boolean) as string[])].sort(
     (a, b) => a.localeCompare(b),
   )
+  const canExport =
+    marks.notes.length > 0 || marks.highlights.length > 0 || marks.bookmarks.length > 0
+
+  async function exportLesson(kind: 'text' | 'word') {
+    if (!canExport || busy) return
+    setBusy(kind)
+    setExportError('')
+    try {
+      if (kind === 'text') {
+        const { downloadLessonText } = await import('../lib/exportNotebook')
+        await downloadLessonText(marks)
+      } else {
+        const { downloadLessonWord } = await import('../lib/exportNotebookDocx')
+        await downloadLessonWord(marks)
+      }
+    } catch {
+      setExportError('Could not prepare the file. Try again.')
+    } finally {
+      setBusy(null)
+    }
+  }
 
   if (!ready) {
     return (
@@ -44,6 +68,29 @@ export function NotebookPage() {
     <article className="page">
       <h1>Notebook</h1>
       <p className="lead">Bookmarks, highlights, and notes on your account. No one else can see them.</p>
+      <p className="export-row">
+        <button
+          type="button"
+          className="mark-action"
+          disabled={!canExport || busy !== null}
+          onClick={() => void exportLesson('text')}
+        >
+          {busy === 'text' ? 'Preparing…' : 'Download text'}
+        </button>
+        <button
+          type="button"
+          className="mark-action"
+          disabled={!canExport || busy !== null}
+          onClick={() => void exportLesson('word')}
+        >
+          {busy === 'word' ? 'Preparing…' : 'Download Word'}
+        </button>
+      </p>
+      <p className="fine">
+        A Sunday School file with the verses, the words you marked, and your notes. Word opens the
+        .docx; any editor opens the .txt.
+      </p>
+      {exportError ? <p className="fine">{exportError}</p> : null}
 
       <h2>Bookmarks</h2>
       {marks.bookmarks.length === 0 && (

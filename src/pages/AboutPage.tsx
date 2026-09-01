@@ -37,7 +37,7 @@ export function AboutPage() {
         <li>{HENRY_SOURCE}</li>
         <li>{TSK_SOURCE}</li>
         <li>{ROBERTSON_SOURCE} Complete Matthew, Mark, Luke, and Acts. John through Revelation wait until those volumes are public domain.</li>
-        <li>Nave’s Topical Bible, Orville J. Nave, 1896 (public domain).</li>
+        <li>Nave’s Topical Bible, Orville J. Nave, 1896 (public domain). Verses are printed under each heading from the Go-Bible reading text.</li>
       </ul>
 
       <p>

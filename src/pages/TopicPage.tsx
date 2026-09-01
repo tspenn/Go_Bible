@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from '../App'
+import { parseRef, type Verse } from '../data/kjv'
 import {
   ensureNavesTopic,
   findTopic,
@@ -9,8 +10,45 @@ import {
   naveTopicName,
   navesTopicReady,
   useNaves,
+  versesForNaveRef,
+  type NaveRef,
 } from '../data/naves'
-import { verseHref } from '../router'
+
+function seedRefs(refs: string[]): NaveRef[] {
+  const out: NaveRef[] = []
+  for (const raw of refs) {
+    const p = parseRef(raw)
+    if (p) out.push(p)
+  }
+  return out
+}
+
+function NaveScripture({ refs }: { refs: NaveRef[] }) {
+  return (
+    <ol className="nave-verses">
+      {refs.map((ref) => {
+        const verses = versesForNaveRef(ref)
+        return (
+          <li key={`${ref.bookSlug}-${ref.chapter}-${ref.verse}-${ref.verseEnd ?? ''}`}>
+            <Link className="nave-cite" to={naveRefHref(ref)}>
+              {formatNaveRef(ref)}
+            </Link>
+            {verses.map((v: Verse) => (
+              <p key={v.verse} className="nave-text">
+                {verses.length > 1 ? (
+                  <Link className="nave-vn" to={naveRefHref({ ...ref, verse: v.verse, verseEnd: undefined })}>
+                    {v.verse}
+                  </Link>
+                ) : null}
+                {v.text}
+              </p>
+            ))}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
 
 export function TopicPage({ slug }: { slug: string }) {
   useNaves()
@@ -35,51 +73,34 @@ export function TopicPage({ slug }: { slug: string }) {
     )
   }
 
+  const dump = topic.dump
+  const seedOnly = !dump && topic.seed && topic.seed.refs.length > 0
+
   return (
     <article className="page">
       <p className="eyebrow">Nave’s</p>
       <h1>{topic.name}</h1>
       {topic.seed ? <p className="lead">{topic.seed.summary}</p> : null}
-      {topic.seed && topic.seed.refs.length > 0 ? (
-        <>
-          <h2>Scripture</h2>
-          <ul className="refs">
-            {topic.seed.refs.map((ref) => {
-              const to = verseHref(ref)
-              return <li key={ref}>{to ? <Link to={to}>{ref}</Link> : ref}</li>
-            })}
-          </ul>
-        </>
-      ) : null}
-      {topic.dump ? (
-        <>
-          <p className="source-line">{NAVES_SOURCE}</p>
-          {topic.dump.subtopics.map((sub, i) => (
+      {dump ? <p className="source-line">{NAVES_SOURCE}</p> : null}
+      {seedOnly ? <NaveScripture refs={seedRefs(topic.seed!.refs)} /> : null}
+      {dump
+        ? dump.subtopics.map((sub, i) => (
             <section key={`${sub.label}-${i}`}>
               {sub.label ? <h2>{sub.label}</h2> : null}
-              {sub.refs.length > 0 ? (
-                <ul className="refs">
-                  {sub.refs.map((ref) => (
-                    <li key={`${ref.bookSlug}-${ref.chapter}-${ref.verse}-${ref.verseEnd ?? ''}`}>
-                      <Link to={naveRefHref(ref)}>{formatNaveRef(ref)}</Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+              {sub.refs.length > 0 ? <NaveScripture refs={sub.refs} /> : null}
             </section>
-          ))}
-          {topic.dump.related.length > 0 ? (
-            <>
-              <h2>See also</h2>
-              <ul className="refs">
-                {topic.dump.related.map((rel) => (
-                  <li key={rel}>
-                    <Link to={`/topics/${rel}`}>{naveTopicName(rel)}</Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+          ))
+        : null}
+      {dump && dump.related.length > 0 ? (
+        <>
+          <h2>See also</h2>
+          <ul className="refs">
+            {dump.related.map((rel) => (
+              <li key={rel}>
+                <Link to={`/topics/${rel}`}>{naveTopicName(rel)}</Link>
+              </li>
+            ))}
+          </ul>
         </>
       ) : null}
       <p>

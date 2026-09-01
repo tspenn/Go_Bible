@@ -91,3 +91,11 @@ export function verseHref(ref: string): string | null {
   const bookSlug = m[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
   return `/bible/${bookSlug}/${m[2]}/${m[3]}`
 }
+
+export function bibleVersePath(bookSlug: string, chapter: number, verse: number) {
+  return `/bible/${bookSlug}/${chapter}/${verse}`
+}
+
+export function publicVerseUrl(bookSlug: string, chapter: number, verse: number) {
+  return `https://go-bible.com${bibleVersePath(bookSlug, chapter, verse)}`
+}

@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { findBook, parseRef } from './kjv'
+import { findBook, findVerse, parseRef, type Verse } from './kjv'
 import index from './naves-index.json' with { type: 'json' }
 
 export type NaveTopic = {
@@ -37,7 +37,7 @@ export type NaveView = {
 export const NAVES_SOURCE =
   'Nave’s Topical Bible, Orville J. Nave, 1896 (public domain).'
 
-/** Seed from public-domain Nave’s structure. References only; verse text lives in KJV. */
+/** Seed from public-domain Nave’s structure. Topic pages print the Go-Bible verse text. */
 export const TOPICS: NaveTopic[] = [
   {
     slug: 'faith',
@@ -371,4 +371,14 @@ export function formatNaveRef(ref: NaveRef) {
 
 export function naveRefHref(ref: NaveRef) {
   return `/bible/${ref.bookSlug}/${ref.chapter}/${ref.verse}`
+}
+
+export function versesForNaveRef(ref: NaveRef): Verse[] {
+  const end = Math.max(ref.verse, ref.verseEnd ?? ref.verse)
+  const out: Verse[] = []
+  for (let v = ref.verse; v <= end; v++) {
+    const found = findVerse(ref.bookSlug, ref.chapter, v)
+    if (found) out.push(found)
+  }
+  return out
 }

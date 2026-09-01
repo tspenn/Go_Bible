@@ -3,7 +3,7 @@ import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
 import { AuthProvider, useAuth } from './lib/auth'
-import { MAGAZINE_BLURB, MAGAZINE_LABEL, MAGAZINE_URL, STORE_URL, TAGLINE } from './data/starters'
+import { MAGAZINE_BLURB, MAGAZINE_LABEL, MAGAZINE_URL, STORE_URL, SUPPORT_EMAIL, TAGLINE } from './data/starters'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
@@ -249,6 +249,9 @@ function AppShell() {
             <TranslateFooterLink />
             {' · '}
             © 2026 Skyland Publishing – Skyland Reach LLC
+          </p>
+          <p className="fine">
+            <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
           </p>
         </footer>
       </div>
