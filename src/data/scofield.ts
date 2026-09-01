@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from 'react'
 import { bookName, findVerse, isKnownBook, resolveBookSlug } from './kjv'
 
 export type ScofieldKind = 'word' | 'verse' | 'chain'
@@ -118,6 +119,8 @@ export function scofieldBodyBits(
   return bits
 }
 
+export const SCOFIELD_SOURCE = 'Scofield Reference Bible notes, 1917 (public domain).'
+
 let audited = false
 
 /** Log seed phrases that are not in the displayed verse. Do not invent a substitute. */
@@ -137,7 +140,8 @@ export function auditScofieldPhrases() {
 
 /**
  * Seed notes from the 1917 Scofield Reference Bible (public domain).
- * Short extracts only. Expand later from the 1917 text — never the 1967 New Scofield.
+ * Kept as-is. Full 1917 notes are added from scofield-books/ without replacing these.
+ * Never the 1967 New Scofield.
  */
 export const SCOFIELD: ScofieldNote[] = [
   {
@@ -323,11 +327,124 @@ export const SCOFIELD: ScofieldNote[] = [
 ]
 
 export function notesForVerse(bookSlug: string, chapter: number, verse: number) {
-  return SCOFIELD.filter(
+  const seed = SCOFIELD.filter(
     (n) => n.bookSlug === bookSlug && n.chapter === chapter && n.verse === verse,
   )
+  const extra = (extraByVerse.get(verseKey(bookSlug, chapter, verse)) ?? []).filter(
+    (n) => !collidesWithSeed(n, seed),
+  )
+  const used = new Set(seed.map((n) => n.letter))
+  const extras = extra.map((n) => {
+    let letter = n.letter
+    if (!letter || used.has(letter)) {
+      letter = nextLetter(used)
+    }
+    used.add(letter)
+    return { ...n, letter }
+  })
+  return [...seed, ...extras]
 }
 
 export function notesForChapter(bookSlug: string, chapter: number) {
-  return SCOFIELD.filter((n) => n.bookSlug === bookSlug && n.chapter === chapter)
+  const verses = new Set<number>()
+  for (const n of SCOFIELD) {
+    if (n.bookSlug === bookSlug && n.chapter === chapter) verses.add(n.verse)
+  }
+  const prefix = `${bookSlug}:${chapter}:`
+  for (const key of extraByVerse.keys()) {
+    if (key.startsWith(prefix)) verses.add(Number(key.slice(prefix.length)))
+  }
+  return [...verses].sort((a, b) => a - b).flatMap((v) => notesForVerse(bookSlug, chapter, v))
+}
+
+type BookPayload = {
+  source: string
+  notes: ScofieldNote[]
+}
+
+const bookLoaders = import.meta.glob('./scofield-books/*.json') as Record<
+  string,
+  () => Promise<{ default: BookPayload } | BookPayload>
+>
+
+const extraByVerse = new Map<string, ScofieldNote[]>()
+const loadedBooks = new Set<string>()
+const loading = new Map<string, Promise<void>>()
+const listeners = new Set<() => void>()
+let scoVersion = 0
+
+function verseKey(bookSlug: string, chapter: number, verse: number) {
+  return `${bookSlug}:${chapter}:${verse}`
+}
+
+function fold(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function collidesWithSeed(note: ScofieldNote, seed: ScofieldNote[]) {
+  const phrase = fold(note.kjvPhrase || note.heading || '')
+  for (const s of seed) {
+    if (phrase && (phrase === fold(s.kjvPhrase) || phrase === fold(s.webPhrase) || phrase === fold(s.heading || ''))) {
+      return true
+    }
+  }
+  return false
+}
+
+function nextLetter(used: Set<string>) {
+  for (let i = 0; i < 26; i++) {
+    const letter = String.fromCharCode(97 + i)
+    if (!used.has(letter)) return letter
+  }
+  return 'a'
+}
+
+function addNotes(notes: ScofieldNote[]) {
+  for (const n of notes) {
+    const key = verseKey(n.bookSlug, n.chapter, n.verse)
+    const list = extraByVerse.get(key) ?? []
+    list.push(n)
+    extraByVerse.set(key, list)
+  }
+  scoVersion += 1
+  listeners.forEach((fn) => fn())
+}
+
+export function subscribeScofield(fn: () => void) {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+
+export function scofieldStoreVersion() {
+  return scoVersion
+}
+
+export async function ensureScofieldBook(bookSlug: string) {
+  if (loadedBooks.has(bookSlug)) return
+  const path = `./scofield-books/${bookSlug}.json`
+  const loader = bookLoaders[path]
+  if (!loader) {
+    loadedBooks.add(bookSlug)
+    return
+  }
+  const pending = loading.get(bookSlug)
+  if (pending) return pending
+  const work = loader()
+    .then((mod) => {
+      const payload = (mod as { default?: BookPayload }).default ?? (mod as BookPayload)
+      addNotes(payload.notes ?? [])
+      loadedBooks.add(bookSlug)
+    })
+    .catch((err) => {
+      console.warn(`Scofield book ${bookSlug} failed to load`, err)
+    })
+    .finally(() => {
+      loading.delete(bookSlug)
+    })
+  loading.set(bookSlug, work)
+  return work
+}
+
+export function useScofield() {
+  return useSyncExternalStore(subscribeScofield, scofieldStoreVersion, () => 0)
 }

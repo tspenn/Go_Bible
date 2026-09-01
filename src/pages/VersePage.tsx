@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, navigate } from '../App'
 import { findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
 import { topicsForVerse } from '../data/naves'
-import { markerLetter, noteKey, notesForChapter, phraseSpan } from '../data/scofield'
+import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
 import { henryForVerse } from '../data/henry'
 import {
@@ -36,8 +36,10 @@ export function VersePage({
   const { user } = useAuth()
   const marks = useMarks()
   useTsk()
+  useScofield()
   useEffect(() => {
     void ensureTskBook(bookSlug)
+    void ensureScofieldBook(bookSlug)
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]

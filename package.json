@@ -10,6 +10,7 @@
     "dict:build": "node scripts/build-easton.mjs",
     "tsk:seed": "node scripts/ingest-tsk.mjs --seed",
     "tsk:full": "node scripts/ingest-tsk.mjs",
+    "scofield:full": "node scripts/ingest-scofield.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -29,6 +29,7 @@ import {
 } from '../data/robertson'
 import {
   formatScofieldRef,
+  SCOFIELD_SOURCE,
   scofieldBodyBits,
   scofieldHref,
   type ScofieldNote,
@@ -136,7 +137,7 @@ export function NotesSheet({
       )}
 
       <section id="sheet-scofield" className={focus === 'scofield' ? 'note-on' : undefined}>
-        <p className="source-line">Scofield Reference Bible notes, 1917 (public domain)</p>
+        <p className="source-line">{SCOFIELD_SOURCE}</p>
         {scofield.length === 0 && <p>No 1917 Scofield note on this verse.</p>}
         {scofield.map((n) => (
           <div key={n.key} id={`note-${n.key}`} className={highlightKey === n.key ? 'note-on' : undefined}>
