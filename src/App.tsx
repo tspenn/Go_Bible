@@ -227,6 +227,7 @@ function AppShell() {
     <div className="app">
       <header className="masthead">
         <Link to="/" className="brand">
+          <img className="brand-mark" src="/logo.png" width="40" height="40" alt="" />
           <span className="brand-name">Walking By Faith</span>
           <span className="brand-tag">{TAGLINE}</span>
         </Link>

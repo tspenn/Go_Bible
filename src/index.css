@@ -71,8 +71,15 @@ button.text-link {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.55rem 0.85rem;
+  align-items: center;
+  gap: 0.55rem 0.75rem;
+}
+.brand-mark {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.45rem;
+  flex-shrink: 0;
+  display: block;
 }
 .brand-name {
   font-family: var(--serif);
