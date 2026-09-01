@@ -15,6 +15,7 @@
     "henry:sos": "node scripts/ingest-henry-sos.mjs",
     "naves:full": "node scripts/ingest-naves.mjs",
     "search:index": "node scripts/build-study-search.mjs",
+    "titles:build": "node scripts/build-chapter-titles.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

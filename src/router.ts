@@ -3,6 +3,7 @@ export type Route =
   | { name: 'topics' }
   | { name: 'topic'; slug: string }
   | { name: 'bible' }
+  | { name: 'book'; bookSlug: string }
   | { name: 'notebook' }
   | { name: 'settings' }
   | { name: 'login' }
@@ -48,6 +49,9 @@ export function parsePath(pathname: string): Route {
   if (parts[0] === 'bible' && parts[1] && parts[2]) {
     return { name: 'chapter', bookSlug: parts[1], chapter: Number(parts[2]) }
   }
+  if (parts[0] === 'bible' && parts[1]) {
+    return { name: 'book', bookSlug: parts[1] }
+  }
   if (parts[0] === 'bible') return { name: 'bible' }
   return { name: 'home' }
 }
@@ -62,6 +66,8 @@ export function href(route: Route): string {
       return `/topics/${route.slug}`
     case 'bible':
       return '/bible'
+    case 'book':
+      return `/bible/${route.bookSlug}`
     case 'notebook':
       return '/notebook'
     case 'settings':

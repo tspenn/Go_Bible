@@ -24,6 +24,7 @@ import { mineGlyph, notesForVerse, useMarks, washesForVerse, type UserNote } fro
 import { tskForVerse, ensureTskBook, useTsk } from '../data/tsk'
 import { useAuth } from '../lib/auth'
 import { parseVerseQuery, isNoteTab } from '../router'
+import { recordLastRead } from '../data/last-read'
 
 export function VersePage({
   bookSlug,
@@ -52,6 +53,10 @@ export function VersePage({
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
+  useEffect(() => {
+    if (!list.length) return
+    recordLastRead(bookSlug, chapter, verse)
+  }, [bookSlug, chapter, verse, list.length])
   const focus = verse ?? selected?.verse
   const bookName = selected?.book ?? list[0]?.book ?? bookSlug
   const chapterNotes = notesForChapter(bookSlug, chapter)
@@ -286,7 +291,10 @@ export function VersePage({
   return (
     <article className={`page reading${sheetOpen ? ' with-notes' : ''}`}>
       <div className="reader">
-        <BookPicker selectedBook={bookSlug} selectedChapter={chapter} />
+        <BookPicker selectedBook={bookSlug} />
+        <p className="reader-jump">
+          <Link to={`/bible/${bookSlug}`}>All chapters</Link>
+        </p>
         <h1>
           {bookName} {chapter}
         </h1>

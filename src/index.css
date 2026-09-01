@@ -125,27 +125,125 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 
 .lead { font-size: 1.2rem; margin-top: 0; }
 
-.book-picker { margin: 0 0 1.75rem; }
-.start-reads {
+.book-picker {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  flex-direction: column;
+  gap: 0.5rem;
   margin: 0 0 1.75rem;
 }
-.start-read {
+.testament-drop {
+  border: 1px solid #d9d3c9;
+  background: #fff;
+}
+.testament-row {
+  display: flex;
+  align-items: stretch;
+}
+.testament-row > button {
+  flex: 1;
+  text-align: left;
+  font: inherit;
+  font-size: 1.15rem;
+  padding: 0.85rem 1rem;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.testament-row > button:hover {
+  color: var(--blue-deep);
+}
+.testament-row.open {
+  background: var(--blue);
+}
+.testament-row.open > button,
+.testament-row.open > button:hover {
+  color: var(--cream);
+}
+.testament-books {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0 0.5rem;
+  border-top: 1px solid #d9d3c9;
+  max-height: 22rem;
+  overflow: auto;
+}
+.testament-books li {
+  display: flex;
+  align-items: center;
+}
+.testament-books a:not(.last-mark) {
+  flex: 1;
+  display: block;
+  padding: 0.45rem 1rem;
+  color: var(--text);
+}
+.testament-books a:not(.last-mark):hover,
+.testament-books a:not(.last-mark)[aria-current='page'] {
+  background: #efe6d2;
+  color: var(--blue-deep);
+}
+.last-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 11rem;
-  padding: 0.9rem 1.4rem;
-  background: var(--blue);
-  color: var(--cream);
-  font-family: var(--serif);
-  font-size: 1.45rem;
-  font-style: italic;
-  line-height: 1.2;
+  width: 2.6rem;
+  flex-shrink: 0;
+  color: var(--gold);
+  line-height: 0;
 }
-.start-read:hover { color: var(--gold); }
+.last-mark:hover { color: var(--blue-deep); }
+.testament-row.open .last-mark,
+.testament-row.open .last-mark:hover {
+  color: var(--gold);
+}
+
+.crumb {
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+.chapter-source {
+  font-size: 0.9rem;
+  color: #5c564c;
+  margin: 0 0 1.25rem;
+}
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0 0 2rem;
+}
+.chapter-list a {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e6e0d6;
+  color: var(--text);
+}
+.chapter-list a:hover .chapter-list-n { color: var(--blue); }
+.chapter-list-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.chapter-list-head .last-mark {
+  width: auto;
+  margin-left: 0.15rem;
+}
+.chapter-list-n {
+  font-weight: 500;
+  color: var(--blue-deep);
+}
+.chapter-list-syn {
+  font-size: 0.95rem;
+  color: #5c564c;
+  line-height: 1.35;
+}
+.reader-jump {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
 
 .picker-step {
   font-size: 0.75rem;

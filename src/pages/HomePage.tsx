@@ -5,7 +5,7 @@ export function HomePage() {
     <article className="page">
       <h1>Go-Bible</h1>
       <p className="lead">A Bible you can read. Tap a word or verse number for notes.</p>
-      <BookPicker showStarts />
+      <BookPicker />
     </article>
   )
 }

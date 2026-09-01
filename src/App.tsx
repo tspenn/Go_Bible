@@ -8,6 +8,7 @@ import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
 import { BiblePage } from './pages/BiblePage'
+import { BookPage } from './pages/BookPage'
 import { VersePage } from './pages/VersePage'
 import { NotebookPage } from './pages/NotebookPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -118,6 +119,8 @@ function Screen({
       return <TopicPage slug={route.slug} />
     case 'bible':
       return <BiblePage />
+    case 'book':
+      return <BookPage bookSlug={route.bookSlug} />
     case 'chapter':
       return (
         <VersePage
@@ -164,7 +167,7 @@ function MastNav() {
 }
 
 function bibleOn(name: Route['name']) {
-  return name === 'bible' || name === 'chapter' || name === 'verse'
+  return name === 'bible' || name === 'book' || name === 'chapter' || name === 'verse'
 }
 
 function topicsOn(name: Route['name']) {
