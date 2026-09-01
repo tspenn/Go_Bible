@@ -59,6 +59,7 @@ export type ScofieldBodyBit =
 const BOOK_REF =
   /\b(?:(\d+)\s+)?([A-Za-z]+)\.?\s+(\d+):(\d+)(?:[-–](\d+))?/g
 const VS_REF = /\bvs\.\s*(\d+)(?:[-–](\d+))?/gi
+const SEE_SCOFIELD = /\bSee Scofield[,:]?\s*"([^"]+)"/gi
 
 export function scofieldBodyBits(
   body: string,
@@ -69,16 +70,33 @@ export function scofieldBodyBits(
   const hits: Hit[] = []
   const bookRe = new RegExp(BOOK_REF.source, 'g')
   const vsRe = new RegExp(VS_REF.source, 'gi')
+  const seeRe = new RegExp(SEE_SCOFIELD.source, 'gi')
+
+  function addRef(start: number, end: number, book: string, chapter: number, verse: number) {
+    if (!isKnownBook(book)) return
+    hits.push({
+      start,
+      end,
+      href: scofieldHref({
+        bookSlug: resolveBookSlug(book),
+        chapter,
+        verse,
+      }),
+    })
+  }
 
   for (const m of body.matchAll(bookRe)) {
     const book = [m[1], m[2]].filter(Boolean).join(' ')
-    if (!isKnownBook(book) || m.index == null) continue
-    const ref = {
-      bookSlug: resolveBookSlug(book),
-      chapter: Number(m[3]),
-      verse: Number(m[4]),
-    }
-    hits.push({ start: m.index, end: m.index + m[0].length, href: scofieldHref(ref) })
+    if (m.index == null) continue
+    addRef(m.index, m.index + m[0].length, book, Number(m[3]), Number(m[4]))
+  }
+
+  for (const m of body.matchAll(seeRe)) {
+    if (m.index == null) continue
+    const inner = m[1].trim().match(/^(?:(\d+)\s+)?([A-Za-z.]+)\s+(\d+):(\d+)/)
+    if (!inner) continue
+    const book = [inner[1], inner[2]].filter(Boolean).join(' ')
+    addRef(m.index, m.index + m[0].length, book, Number(inner[3]), Number(inner[4]))
   }
 
   for (const m of body.matchAll(vsRe)) {
@@ -87,7 +105,7 @@ export function scofieldBodyBits(
     hits.push({ start: m.index, end: m.index + m[0].length, href: scofieldHref(ref) })
   }
 
-  hits.sort((a, b) => a.start - b.start)
+  hits.sort((a, b) => a.start - b.start || b.end - a.end)
   const bits: ScofieldBodyBit[] = []
   let at = 0
   for (const hit of hits) {
@@ -178,6 +196,21 @@ export const SCOFIELD: ScofieldNote[] = [
     kind: 'chain',
     seeAlso: [],
     body: '"Everlasting life" is a life, not a mere endless existence. It is the life of God revealed in Christ, imparted to the believer.',
+  },
+  {
+    bookSlug: 'matthew',
+    chapter: 4,
+    verse: 8,
+    heading: 'world',
+    kjvPhrase: 'world',
+    webPhrase: 'world',
+    letter: 'a',
+    kind: 'word',
+    seeAlso: [
+      { bookSlug: 'revelation', chapter: 13, verse: 8 },
+      { bookSlug: 'john', chapter: 7, verse: 7 },
+    ],
+    body: 'The Greek word kosmos means "order," "arrangement," and so, with the Greeks, "beauty"; for order and arrangement in the sense of system are at the bottom of the Greek conception of beauty. When used in the N.T. of humanity, the "world" of men, it is organized humanity--humanity in families, tribes, nations--which is meant. The word for chaotic, unorganized humanity--the mere mass of man is thalassa, the "sea" of men (e.g. Revelation 13:1). (See Scofield "Revelation 13:8".) For "world" (kosmos) in the bad ethical sense, "world system," John 7:7.',
   },
   {
     bookSlug: 'john',

@@ -80,16 +80,25 @@ export function NotesSheet({
               )}
             </p>
             {n.seeAlso.length > 0 && (
-              <p className="see-also">
-                See also{' '}
-                {n.seeAlso.map((ref, i) => (
-                  <span key={`${ref.bookSlug}-${ref.chapter}-${ref.verse}`}>
-                    {i > 0 ? '; ' : ''}
-                    <Link to={scofieldHref(ref)}>{formatScofieldRef(ref)}</Link>
-                  </span>
-                ))}
-                .
-              </p>
+              <>
+                <p className="see-also">
+                  <Link to={scofieldHref(n.seeAlso[0])}>
+                    Next in chain → {formatScofieldRef(n.seeAlso[0])}
+                  </Link>
+                </p>
+                {n.seeAlso.length > 1 && (
+                  <p className="see-also">
+                    See also{' '}
+                    {n.seeAlso.slice(1).map((ref, i) => (
+                      <span key={`${ref.bookSlug}-${ref.chapter}-${ref.verse}`}>
+                        {i > 0 ? '; ' : ''}
+                        <Link to={scofieldHref(ref)}>{formatScofieldRef(ref)}</Link>
+                      </span>
+                    ))}
+                    .
+                  </p>
+                )}
+              </>
             )}
           </div>
         ))}

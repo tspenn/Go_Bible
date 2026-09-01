@@ -79,12 +79,14 @@ export function VersePage({
     () =>
       verse != null ||
       parseVerseQuery(search, hash).tab === 'robertson' ||
-      parseVerseQuery(search, hash).tab === 'scofield',
+      parseVerseQuery(search, hash).tab === 'scofield' ||
+      parseVerseQuery(search, hash).tab === 'henry',
   )
   const [sheetFocus, setSheetFocus] = useState<SheetFocus>(() => {
     const tab = parseVerseQuery(search, hash).tab
     if (tab === 'robertson') return 'robertson'
     if (tab === 'scofield') return 'scofield'
+    if (tab === 'henry') return 'henry'
     return null
   })
   const [highlightKey, setHighlightKey] = useState<string | null>(null)
@@ -116,10 +118,11 @@ export function VersePage({
   }, [bookSlug, chapter, closeWord])
 
   useEffect(() => {
-    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield') {
+    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield' || query.tab === 'henry') {
       setSheetOpen(true)
       if (query.tab === 'robertson') setSheetFocus('robertson')
       else if (query.tab === 'scofield') setSheetFocus('scofield')
+      else if (query.tab === 'henry') setSheetFocus('henry')
     } else {
       setSheetOpen(false)
     }
@@ -156,6 +159,15 @@ export function VersePage({
     rwpByVerse,
   ])
 
+  useEffect(() => {
+    if (!sheetOpen || query.tab !== 'scofield') return
+    const onVerse = sheetVerse != null ? (byVerse.get(sheetVerse) ?? []) : []
+    setHighlightKey((current) => {
+      if (current && onVerse.some((n) => n.key === current)) return current
+      return onVerse[0]?.key ?? null
+    })
+  }, [sheetOpen, query.tab, sheetVerse, byVerse])
+
   function openRobertson(note: RobertsonNote & { key: string; letter: string }) {
     closeWord()
     setSheetFocus('robertson')
@@ -179,7 +191,7 @@ export function VersePage({
     setSheetOpen(false)
     setSheetFocus(null)
     setHighlightKey(null)
-    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield') {
+    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield' || query.tab === 'henry') {
       navigate(`/bible/${bookSlug}/${chapter}`)
     }
   }

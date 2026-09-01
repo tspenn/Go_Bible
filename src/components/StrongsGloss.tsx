@@ -1,5 +1,6 @@
 import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react'
 import { dictForWord, dictSpansInText, type DictEntry } from '../data/dictionary'
+import { phraseSpan } from '../data/scofield'
 import {
   lookupStrongs,
   STRONGS_SOURCE,
@@ -157,6 +158,15 @@ function WordBits({
   })
 }
 
+function wordSpan(text: string, word: string) {
+  const needle = word.trim()
+  if (!needle) return null
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const m = text.match(new RegExp(`\\b${escaped}\\b`, 'i'))
+  if (!m || m.index == null) return null
+  return { start: m.index, end: m.index + m[0].length }
+}
+
 export function VerseWords({
   text,
   verse,
@@ -173,107 +183,124 @@ export function VerseWords({
   scoMarks?: ScoMark[]
 }) {
   const rwp = rwpMarks ?? []
-  type Range =
-    | { kind: 'sco'; start: number; end: number; mark: ScoMark }
-    | { kind: 'dict'; start: number; end: number; entry: DictEntry }
-  const ranges: Range[] = []
+  const sco = (scoMarks ?? [])
+    .map((mark) => {
+      const span = mark.phrase ? phraseSpan(text, mark.phrase) : null
+      return span ? { start: span.start, end: span.end, mark } : null
+    })
+    .filter((x): x is { start: number; end: number; mark: ScoMark } => x != null)
+  const names = dictSpansInText(text)
+  const rwpSpans = rwp
+    .map((mark) => {
+      const span = wordSpan(text, mark.word)
+      return span ? { start: span.start, end: span.end, mark } : null
+    })
+    .filter((x): x is { start: number; end: number; mark: RwpMark } => x != null)
 
-  for (const mark of scoMarks ?? []) {
-    if (!mark.phrase) continue
-    const escaped = mark.phrase.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+')
-    const m = text.match(new RegExp(escaped, 'i'))
-    if (!m || m.index == null) continue
-    const start = m.index
-    const end = m.index + m[0].length
-    if (ranges.some((r) => start < r.end && end > r.start)) continue
-    ranges.push({ kind: 'sco', start, end, mark })
-  }
-
-  for (const span of dictSpansInText(text)) {
-    if (ranges.some((r) => span.start < r.end && span.end > r.start)) continue
-    ranges.push({ kind: 'dict', start: span.start, end: span.end, entry: span.entry })
-  }
-  ranges.sort((a, b) => a.start - b.start)
-
-  if (ranges.length === 0) {
+  if (sco.length === 0 && names.length === 0) {
     return <WordBits text={text} verse={verse} dict={dict} onOpen={onOpen} rwpMarks={rwp} />
   }
 
+  const cuts = new Set<number>([0, text.length])
+  for (const r of sco) {
+    cuts.add(r.start)
+    cuts.add(r.end)
+  }
+  for (const r of names) {
+    cuts.add(r.start)
+    cuts.add(r.end)
+  }
+  for (const r of rwpSpans) {
+    cuts.add(r.start)
+    cuts.add(r.end)
+  }
+  const points = [...cuts].sort((a, b) => a - b)
   const chunks: ReactNode[] = []
-  let at = 0
-  ranges.forEach((range, i) => {
-    if (range.start > at) {
-      chunks.push(
-        <WordBits
-          key={`t${i}`}
-          text={text.slice(at, range.start)}
-          verse={verse}
-          dict={dict}
-          onOpen={onOpen}
-          rwpMarks={rwp}
-        />,
-      )
-    }
-    const slice = text.slice(range.start, range.end)
-    if (range.kind === 'sco') {
-      const rwpHere = rwp.filter((m) =>
-        new RegExp(`\\b${m.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(slice),
-      )
-      chunks.push(
-        <span key={range.mark.key}>
-          <button
-            type="button"
-            className="sco-phrase"
-            title={range.mark.title}
-            onClick={range.mark.onOpen}
-          >
-            {slice}
-          </button>
-          <button
-            type="button"
-            className="callout"
-            title={range.mark.title}
-            onClick={range.mark.onOpen}
-          >
-            {range.mark.letter}
-          </button>
-          {rwpHere.map((m) => (
-            <button key={`rwp-${m.letter}`} type="button" className="callout" title={m.title} onClick={m.onOpen}>
-              {m.letter}
-            </button>
-          ))}
-        </span>,
-      )
-    } else {
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const from = points[i]
+    const to = points[i + 1]
+    if (from >= to) continue
+    const slice = text.slice(from, to)
+    const scoHere = sco.find((r) => r.start <= from && r.end >= to)
+    const dictHere = names.find((r) => r.start <= from && r.end >= to)
+
+    if (scoHere) {
+      const className = dictHere ? 'sco-phrase dict-hit' : 'sco-phrase'
       chunks.push(
         <button
-          key={`d${range.start}-${range.entry.slug}`}
+          key={`s${from}-${scoHere.mark.key}`}
+          type="button"
+          className={className}
+          title={scoHere.mark.title}
+          onClick={scoHere.mark.onOpen}
+        >
+          {slice}
+        </button>,
+      )
+    } else if (dictHere) {
+      chunks.push(
+        <button
+          key={`d${from}-${dictHere.entry.slug}`}
           type="button"
           className="dict-hit"
-          title={range.entry.name}
+          title={dictHere.entry.name}
           onClick={(e) => {
             const box = e.currentTarget.getBoundingClientRect()
-            onOpen({ kind: 'dict', entry: range.entry, word: slice, verse, x: box.left, y: box.bottom })
+            onOpen({
+              kind: 'dict',
+              entry: dictHere.entry,
+              word: slice,
+              verse,
+              x: box.left,
+              y: box.bottom,
+            })
           }}
         >
           {slice}
         </button>,
       )
+    } else {
+      chunks.push(
+        <WordBits
+          key={`t${from}`}
+          text={slice}
+          verse={verse}
+          dict={dict}
+          onOpen={onOpen}
+          rwpMarks={[]}
+        />,
+      )
     }
-    at = range.end
-  })
-  if (at < text.length) {
-    chunks.push(
-      <WordBits
-        key="tail"
-        text={text.slice(at)}
-        verse={verse}
-        dict={dict}
-        onOpen={onOpen}
-        rwpMarks={rwp}
-      />,
-    )
+
+    for (const mark of sco.filter((r) => r.end === to)) {
+      chunks.push(
+        <button
+          key={`scall-${mark.mark.key}`}
+          type="button"
+          className="callout"
+          title={mark.mark.title}
+          onClick={mark.mark.onOpen}
+        >
+          {mark.mark.letter}
+        </button>,
+      )
+    }
+    for (const mark of rwpSpans.filter((r) => r.end === to)) {
+      chunks.push(
+        <button
+          key={`rcall-${mark.mark.letter}-${to}`}
+          type="button"
+          className="callout"
+          title={mark.mark.title}
+          onClick={mark.mark.onOpen}
+        >
+          {mark.mark.letter}
+        </button>,
+      )
+    }
   }
+
   return <>{chunks}</>
 }
 

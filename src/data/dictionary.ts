@@ -160,8 +160,9 @@ export type LinkedBit =
 const BOOK_REF = /\b(?:(\d+)\s+)?([A-Za-z]+)\.?\s+(\d+):(\d+)(?:[-–](\d+))?/g
 const V_REF = /\bv(?:s)?\.\s*(\d+)(?:\s*[-–]\s*(\d+))?/gi
 
-export function bibleVerseHref(bookSlug: string, chapter: number, verse: number) {
-  return `/bible/${bookSlug}/${chapter}/${verse}`
+export function bibleVerseHref(bookSlug: string, chapter: number, verse: number, tab?: string) {
+  const path = `/bible/${bookSlug}/${chapter}/${verse}`
+  return tab ? `${path}?tab=${tab}` : path
 }
 
 const NOTE_DICT_SKIP = new Set(['faith', 'grace', 'hope', 'prayer', 'rest', 'shepherd'])
@@ -181,7 +182,7 @@ export function linkBodyBits(body: string, fromBook: string, fromChapter: number
       bit: {
         type: 'ref',
         text: m[0],
-        href: bibleVerseHref(resolveBookSlug(book), Number(m[3]), Number(m[4])),
+        href: bibleVerseHref(resolveBookSlug(book), Number(m[3]), Number(m[4]), 'henry'),
       },
     })
   }
@@ -194,7 +195,7 @@ export function linkBodyBits(body: string, fromBook: string, fromChapter: number
       bit: {
         type: 'ref',
         text: m[0],
-        href: bibleVerseHref(fromBook, fromChapter, Number(m[1])),
+        href: bibleVerseHref(fromBook, fromChapter, Number(m[1]), 'henry'),
       },
     })
   }

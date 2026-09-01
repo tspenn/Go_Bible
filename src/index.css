@@ -205,6 +205,10 @@ button.sco-phrase:hover { color: var(--blue-deep); }
   border-radius: 0;
 }
 .dict-hit:hover { color: var(--blue-deep); }
+button.sco-phrase.dict-hit {
+  border-bottom: 1px dotted var(--gold);
+  box-shadow: 0 2px 0 var(--blue-deep);
+}
 .see-also { font-size: 0.95rem; }
 .strongs-card {
   position: fixed;
@@ -290,15 +294,15 @@ button.sco-phrase:hover { color: var(--blue-deep); }
 }
 
 button.callout {
-  display: inline;
+  display: inline-block;
   font-family: var(--serif);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-style: italic;
   font-weight: 600;
   line-height: 1;
   vertical-align: super;
-  margin-left: 0.15rem;
-  padding: 0 0.12rem;
+  margin-left: 0.12rem;
+  padding: 0 0.15rem;
   border: 0;
   background: transparent;
   color: var(--gold);
