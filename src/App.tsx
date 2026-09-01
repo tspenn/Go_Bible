@@ -45,19 +45,28 @@ export function Link({
   children,
   className,
   onClick,
+  title,
   'aria-current': ariaCurrent,
+  'aria-label': ariaLabel,
+  'data-go': dataGo,
 }: {
   to: string
   children: React.ReactNode
   className?: string
   onClick?: () => void
+  title?: string
   'aria-current'?: 'page' | undefined
+  'aria-label'?: string
+  'data-go'?: string
 }) {
   return (
     <a
       href={to}
       className={className}
+      title={title}
+      aria-label={ariaLabel}
       aria-current={ariaCurrent}
+      data-go={dataGo}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
         e.preventDefault()

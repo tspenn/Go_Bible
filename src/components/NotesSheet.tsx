@@ -297,11 +297,23 @@ function TskSeeAlso({ groups, focus }: { groups: TskGroup[]; focus: SheetFocus }
         <div key={`${g.sortOrder}-${g.kjvPhrase}-${gi}`}>
           {tskHeading(g) ? <h3>{tskHeading(g)}</h3> : null}
           <ul className="refs tsk-refs">
-            {g.refs.map((ref, i) => (
-              <li key={`${tskHref(ref)}-${i}`}>
-                <Link to={tskHref(ref)}>{formatTskRef(ref)}</Link>
-              </li>
-            ))}
+            {g.refs.map((ref, i) => {
+              const label = formatTskRef(ref)
+              const go = `Go to ${label}`
+              return (
+                <li key={`${tskHref(ref)}-${i}`}>
+                  <Link
+                    className="tsk-go"
+                    to={tskHref(ref)}
+                    title={go}
+                    aria-label={go}
+                    data-go={go}
+                  >
+                    {label}
+                  </Link>
+                </li>
+              )
+            })}
           </ul>
         </div>
       ))}
