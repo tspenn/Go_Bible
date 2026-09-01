@@ -13,7 +13,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
 
   return (
     <article className="page">
-      <p className="eyebrow">Nave’s Topical Bible</p>
+      <p className="eyebrow">Nave’s Topical Bible, 1896</p>
       <h1>Topics</h1>
       <input
         className="search-input"
@@ -26,7 +26,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
         {results.map((t) => (
           <li key={t.slug}>
             <Link to={`/topics/${t.slug}`}>{t.name}</Link>
-            <span>{t.summary}</span>
+            {t.summary ? <span>{t.summary}</span> : null}
           </li>
         ))}
       </ul>

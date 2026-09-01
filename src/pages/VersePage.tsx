@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, navigate } from '../App'
 import { findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
-import { topicsForVerse } from '../data/naves'
+import { ensureNavesBook, topicsForVerse, useNaves } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
 import {
@@ -43,10 +43,12 @@ export function VersePage({
   useTsk()
   useScofield()
   useHenry()
+  useNaves()
   useEffect(() => {
     void ensureTskBook(bookSlug)
     void ensureScofieldBook(bookSlug)
     void ensureHenryBook(bookSlug)
+    void ensureNavesBook(bookSlug)
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]

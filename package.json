@@ -13,6 +13,7 @@
     "scofield:full": "node scripts/ingest-scofield.mjs",
     "henry:full": "node scripts/ingest-henry.mjs",
     "henry:sos": "node scripts/ingest-henry-sos.mjs",
+    "naves:full": "node scripts/ingest-naves.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

@@ -11,7 +11,7 @@ import {
   useMarks,
   type UserNote,
 } from '../data/marks'
-import type { NaveTopic } from '../data/naves'
+import type { NaveHit } from '../data/naves'
 import {
   formatTskRef,
   TSK_PREVIEW,
@@ -64,7 +64,7 @@ export function NotesSheet({
   henry: HenryNote[]
   tsk: TskGroup[]
   dict: DictEntry[]
-  topics: NaveTopic[]
+  topics: NaveHit[]
   robertson: (RobertsonNote & { key: string; letter: string })[]
   focus: SheetFocus
   highlightKey: string | null
@@ -243,14 +243,14 @@ export function NotesSheet({
       )}
 
       <section id="sheet-topics" className={focus === 'topics' ? 'note-on' : undefined}>
-        <p className="source-line">Nave’s Topical Bible (public domain)</p>
+        <p className="source-line">Nave’s Topical Bible, Orville J. Nave, 1896 (public domain).</p>
         {topics.length === 0 && <p>No Nave’s topic linked to this verse yet.</p>}
         {topics.length > 0 && (
           <ul className="refs">
             {topics.map((t) => (
               <li key={t.slug}>
                 <Link to={`/topics/${t.slug}`}>{t.name}</Link>
-                <span> — {t.summary}</span>
+                {t.summary ? <span> — {t.summary}</span> : t.hitLabel ? <span> — {t.hitLabel}</span> : null}
               </li>
             ))}
           </ul>

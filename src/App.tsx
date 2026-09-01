@@ -185,7 +185,7 @@ function AppShell() {
       <footer>
         <p>A companion to Walking By Faith · Skyland Publishing – Skyland Reach LLC</p>
         <p className="fine">
-          Nave’s Topical Bible is public domain. Go-Bible text, based on the World
+          Nave’s Topical Bible, 1896, is public domain. Go-Bible text, based on the World
           English Bible (public domain). Divine name rendered LORD.
         </p>
         <p className="fine">© 2026 Skyland Publishing – Skyland Reach LLC</p>
