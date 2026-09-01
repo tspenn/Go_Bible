@@ -14,6 +14,7 @@ import { NotebookPage } from './pages/NotebookPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { AboutPage } from './pages/AboutPage'
 import { LoginPage } from './pages/LoginPage'
+import { TranslateControl, TranslateFooterLink } from './components/TranslateControl'
 
 function useLocation() {
   const [loc, setLoc] = useState(() => ({
@@ -165,6 +166,7 @@ function MastNav() {
   const { user, signOut } = useAuth()
   return (
     <nav className="mast-nav" aria-label="Account">
+      <TranslateControl />
       <Link to="/settings">Settings</Link>
       <Link to="/about">About</Link>
       {user ? <Link to="/notebook">Notebook</Link> : null}
@@ -243,6 +245,8 @@ function AppShell() {
           <p>A companion to Walking By Faith Magazine</p>
           <p className="fine">
             <Link to="/settings">How to use</Link>
+            {' · '}
+            <TranslateFooterLink />
             {' · '}
             © 2026 Skyland Publishing – Skyland Reach LLC
           </p>

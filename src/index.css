@@ -52,6 +52,7 @@ a:hover { color: var(--gold); }
   align-items: center;
 }
 .mast-auth,
+.translate-btn,
 button.text-link {
   font: inherit;
   font-size: inherit;
@@ -1016,6 +1017,65 @@ footer p { margin: 0.15rem 0; }
 footer .fine { opacity: 0.85; font-size: 0.78rem; }
 footer a { color: var(--cream); }
 footer a:hover { color: var(--gold); }
+
+.translate-wrap { position: relative; }
+.translate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.translate-btn:hover { color: var(--gold); }
+.translate-pop {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 30;
+  min-width: 11.5rem;
+  background: var(--cream);
+  color: var(--text);
+  border: 1px solid #d9d3c9;
+  border-radius: 0.4rem;
+  padding: 0.65rem 0.8rem 0.75rem;
+}
+.translate-pop-label {
+  margin: 0 0 0.4rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--blue-deep);
+}
+.translate-foot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font: inherit;
+  font-size: inherit;
+  color: var(--cream);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  vertical-align: baseline;
+}
+.translate-foot:hover { color: var(--gold); }
+
+.goog-te-gadget { font-size: 0 !important; line-height: 0 !important; }
+.goog-te-gadget .goog-te-combo {
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text);
+}
+.goog-te-gadget a,
+.goog-te-gadget img,
+.goog-te-gadget span { display: none !important; }
+.goog-te-banner-frame.skiptranslate { display: none !important; }
+body { top: 0 !important; position: static !important; }
+.skiptranslate iframe { display: none; }
 
 .dock {
   height: var(--dock-h);
