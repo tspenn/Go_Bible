@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "dict:build": "node scripts/build-easton.mjs",
+    "tsk:seed": "node scripts/ingest-tsk.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },

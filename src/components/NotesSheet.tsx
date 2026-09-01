@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from '../App'
 import { linkBodyBits, type DictEntry } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
@@ -12,6 +13,16 @@ import {
 } from '../data/marks'
 import type { NaveTopic } from '../data/naves'
 import {
+  formatTskRef,
+  TSK_PREVIEW,
+  TSK_SOURCE,
+  tskHeading,
+  tskHref,
+  tskLinkCount,
+  tskPreview,
+  type TskGroup,
+} from '../data/tsk'
+import {
   isRobertsonBook,
   ROBERTSON_SOURCE,
   type RobertsonNote,
@@ -23,7 +34,7 @@ import {
   type ScofieldNote,
 } from '../data/scofield'
 
-export type SheetFocus = 'scofield' | 'henry' | 'dictionary' | 'topics' | 'robertson' | 'mine' | null
+export type SheetFocus = 'scofield' | 'henry' | 'tsk' | 'dictionary' | 'topics' | 'robertson' | 'mine' | null
 
 export function NotesSheet({
   bookName,
@@ -32,6 +43,7 @@ export function NotesSheet({
   verse,
   scofield,
   henry,
+  tsk,
   dict,
   topics,
   robertson,
@@ -49,6 +61,7 @@ export function NotesSheet({
   verse: number
   scofield: (ScofieldNote & { key: string; letter: string })[]
   henry: HenryNote | undefined
+  tsk: TskGroup[]
   dict: DictEntry[]
   topics: NaveTopic[]
   robertson: (RobertsonNote & { key: string; letter: string })[]
@@ -208,6 +221,8 @@ export function NotesSheet({
         )}
       </section>
 
+      <TskSeeAlso key={`${bookSlug}-${chapter}-${verse}`} groups={tsk} focus={focus} />
+
       {dict.length > 0 && (
         <section id="sheet-dictionary" className={focus === 'dictionary' ? 'note-on' : undefined}>
           <p className="source-line">Easton’s Bible Dictionary, 1897, and Smith (public domain)</p>
@@ -260,5 +275,35 @@ export function NotesSheet({
         </section>
       )}
     </aside>
+  )
+}
+
+function TskSeeAlso({ groups, focus }: { groups: TskGroup[]; focus: SheetFocus }) {
+  const [more, setMore] = useState(false)
+  const total = tskLinkCount(groups)
+  const shown = tskPreview(groups, more)
+
+  return (
+    <section id="sheet-tsk" className={focus === 'tsk' ? 'note-on' : undefined}>
+      <p className="source-line">{TSK_SOURCE}</p>
+      {total === 0 && <p>No Treasury of Scripture Knowledge references on this verse in the seed set yet.</p>}
+      {shown.map((g, gi) => (
+        <div key={`${g.sortOrder}-${g.kjvPhrase}-${gi}`}>
+          {tskHeading(g) ? <h3>{tskHeading(g)}</h3> : null}
+          <ul className="refs tsk-refs">
+            {g.refs.map((ref, i) => (
+              <li key={`${tskHref(ref)}-${i}`}>
+                <Link to={tskHref(ref)}>{formatTskRef(ref)}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      {total > TSK_PREVIEW && !more && (
+        <button type="button" className="mark-action tsk-more" onClick={() => setMore(true)}>
+          More references
+        </button>
+      )}
+    </section>
   )
 }

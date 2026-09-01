@@ -530,6 +530,14 @@ a.ribbon-btn {
   vertical-align: middle;
   margin-right: 0.35rem;
 }
+.tsk-refs {
+  margin: 0 0 0.75rem;
+}
+.tsk-more {
+  margin-top: 0.35rem;
+  width: auto;
+}
+
 .auth-form {
   max-width: 22rem;
 }

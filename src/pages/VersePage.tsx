@@ -16,6 +16,7 @@ import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
 import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
 import { mineGlyph, notesForVerse, useMarks, washesForVerse, type UserNote } from '../data/marks'
+import { tskForVerse } from '../data/tsk'
 import { useAuth } from '../lib/auth'
 import { parseVerseQuery } from '../router'
 
@@ -247,6 +248,7 @@ export function VersePage({
   const sheetHenry = sheetVerse != null ? henryForVerse(bookSlug, chapter, sheetVerse) : undefined
   const sheetDict = sheetVerse != null ? dictForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetTopics = sheetVerse != null ? topicsForVerse(bookSlug, chapter, sheetVerse) : []
+  const sheetTsk = sheetVerse != null ? tskForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetRwp = sheetVerse != null ? (rwpByVerse.get(sheetVerse) ?? []) : []
   const sheetMine =
     user && sheetVerse != null
@@ -417,6 +419,7 @@ export function VersePage({
             verse={sheetVerse}
             scofield={sheetNotes}
             henry={sheetHenry}
+            tsk={sheetTsk}
             dict={sheetDict}
             topics={sheetTopics}
             robertson={sheetRwp}

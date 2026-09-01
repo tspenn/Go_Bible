@@ -28,8 +28,9 @@ export function SettingsPage() {
 
       <h2>Notes in the text</h2>
       <ul className="how-to">
-        <li>Tap a verse number to open Scofield, Henry, dictionary, topics, and (in Matthew–Acts) Robertson.</li>
+        <li>Tap a verse number to open Scofield, Henry, See also (Treasury of Scripture Knowledge), dictionary, topics, and (in Matthew–Acts) Robertson.</li>
         <li>Gold italic letters a, b, c are 1917 Scofield notes. Tap the letter or the marked phrase.</li>
+        <li>See also lists original TSK cross-references. The first six links show; tap More references for the rest.</li>
         <li>Blue dotted names are Easton or Smith dictionary entries.</li>
         <li>Header search finds a topic or a verse such as John 3:16.</li>
       </ul>
