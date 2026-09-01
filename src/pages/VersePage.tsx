@@ -18,6 +18,7 @@ import {
   type RobertsonNote,
 } from '../data/robertson'
 import { BookPicker } from '../components/BookPicker'
+import { ListenControl } from '../components/ListenControl'
 import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu'
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
 import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
@@ -26,6 +27,7 @@ import { tskForVerse, ensureTskBook, useTsk } from '../data/tsk'
 import { useAuth } from '../lib/auth'
 import { parseVerseQuery, isNoteTab } from '../router'
 import { recordLastRead } from '../data/last-read'
+import { stopSpeak, useSpeak } from '../lib/speak'
 import { readChapterSelection, type LiveWash } from '../lib/textSelect'
 
 export function VersePage({
@@ -43,6 +45,7 @@ export function VersePage({
 }) {
   const { user } = useAuth()
   const marks = useMarks()
+  const speak = useSpeak()
   useTsk()
   useScofield()
   useHenry()
@@ -207,7 +210,13 @@ export function VersePage({
   useEffect(() => {
     closeWord()
     closeSelect()
+    stopSpeak()
   }, [bookSlug, chapter, closeWord, closeSelect])
+
+  useEffect(() => {
+    if (speak.status === 'idle' || speak.verse == null) return
+    document.getElementById(`v${speak.verse}`)?.scrollIntoView({ block: 'center', inline: 'nearest' })
+  }, [speak.status, speak.verse])
 
   useEffect(() => {
     if (verse != null || isNoteTab(query.tab)) {
@@ -369,6 +378,7 @@ export function VersePage({
         <h1>
           {bookName} {chapter}
         </h1>
+        <ListenControl bookName={bookName} chapter={chapter} verses={list} fromVerse={verse} />
 
         <div
           className="chapter"
@@ -406,7 +416,7 @@ export function VersePage({
                 key={v.verse}
                 id={`v${v.verse}`}
                 data-verse={v.verse}
-                className={`verse${focus === v.verse && verse != null ? ' highlight' : ''}`}
+                className={`verse${focus === v.verse && verse != null ? ' highlight' : ''}${speak.verse === v.verse && speak.status !== 'idle' ? ' speaking' : ''}`}
               >
                 {vi > 0 ? ' ' : null}
                 <Link

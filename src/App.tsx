@@ -3,7 +3,7 @@ import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
 import { AuthProvider, useAuth } from './lib/auth'
-import { MAGAZINE_URL, STORE_URL, TAGLINE } from './data/starters'
+import { MAGAZINE_BLURB, MAGAZINE_LABEL, MAGAZINE_URL, STORE_URL, TAGLINE } from './data/starters'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
@@ -199,8 +199,14 @@ function Dock({ routeName }: { routeName: Route['name'] }) {
       <Link to="/topics" className={topicsOn(routeName) ? 'on' : undefined} aria-current={topicsOn(routeName) ? 'page' : undefined}>
         Topics
       </Link>
-      <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer">
-        Walking by Faith
+      <a
+        href={MAGAZINE_URL}
+        className="dock-mag"
+        target="_blank"
+        rel="noopener noreferrer"
+        title={MAGAZINE_BLURB}
+      >
+        {MAGAZINE_LABEL}
       </a>
       <a href={STORE_URL} target="_blank" rel="noopener noreferrer">
         Store

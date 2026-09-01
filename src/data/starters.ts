@@ -1,4 +1,6 @@
 export const MAGAZINE_URL = 'https://faith.skylandpublishing.com'
+export const MAGAZINE_LABEL = 'Walking by Faith Magazine'
+export const MAGAZINE_BLURB = 'Articles on basic questions and an extensive prayer list.'
 export const STORE_URL = 'https://faith.skylandpublishing.com/catalog'
 export const TAGLINE = 'A Bible tool made for reading.'
 

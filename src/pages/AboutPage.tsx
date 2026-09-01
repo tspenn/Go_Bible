@@ -3,7 +3,7 @@ import { HENRY_SOURCE } from '../data/henry'
 import { SOURCE_LINE } from '../data/kjv'
 import { ROBERTSON_SOURCE } from '../data/robertson'
 import { SCOFIELD_SOURCE } from '../data/scofield'
-import { TAGLINE } from '../data/starters'
+import { MAGAZINE_BLURB, MAGAZINE_LABEL, MAGAZINE_URL, TAGLINE } from '../data/starters'
 import { TSK_SOURCE } from '../data/tsk'
 
 export function AboutPage() {
@@ -44,6 +44,13 @@ export function AboutPage() {
         <Link to="/settings">How to use the Bible</Link>
         {' · '}
         <Link to="/bible">Open the Bible</Link>
+      </p>
+      <p>
+        <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer">
+          {MAGAZINE_LABEL}
+        </a>
+        {' — '}
+        {MAGAZINE_BLURB}
       </p>
     </article>
   )

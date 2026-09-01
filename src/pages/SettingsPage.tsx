@@ -37,7 +37,7 @@ export function SettingsPage() {
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
         <li>See also lists original TSK cross-references in green. Hover or press a link for “Go to …” then tap to open that verse. The first six links show; tap More references for the rest.</li>
         <li>Blue dotted names are Easton or Smith dictionary entries.</li>
-        <li>Header search finds a topic or a verse such as John 3:16.</li>
+        <li>Listen to this chapter reads the Go-Bible text aloud. It uses a United States English voice, not a British one. Pause, Resume, and Stop sit beside the chapter title. The verse being read is washed in light blue.</li>
       </ul>
 
       <h2>Your marks</h2>

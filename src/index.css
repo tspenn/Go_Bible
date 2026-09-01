@@ -9,7 +9,7 @@
   --select-live: #efe6d2;
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'Source Sans 3', system-ui, sans-serif;
-  --dock-h: 3.85rem;
+  --dock-h: 4.35rem;
   --footer-h: 3.7rem;
   --chrome-h: calc(var(--dock-h) + var(--footer-h));
 }
@@ -262,6 +262,34 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 .reader-jump {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
+}
+.listen-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin: -0.35rem 0 1rem;
+}
+.listen-btn {
+  font: inherit;
+  font-size: 0.95rem;
+  background: #fff;
+  border: 1px solid #d9d3c9;
+  color: var(--blue-deep);
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+}
+.listen-btn:hover { color: var(--gold); }
+.listen-btn.quiet {
+  background: transparent;
+}
+.listen-voice {
+  font-size: 0.8rem;
+  color: #5c564c;
+}
+.verse.speaking {
+  background: color-mix(in srgb, var(--blue) 22%, transparent);
+  border-radius: 0.15rem;
 }
 
 .picker-step {
@@ -1005,4 +1033,9 @@ footer a:hover { color: var(--gold); }
 .dock a.on,
 .dock a[aria-current='page'] {
   color: var(--gold);
+}
+.dock a.dock-mag {
+  font-size: 0.68rem;
+  line-height: 1.15;
+  letter-spacing: 0;
 }
