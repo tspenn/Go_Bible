@@ -289,6 +289,74 @@ export function searchTopics(q: string): NaveTopic[] {
   return [...seedHits, ...dumpHits]
 }
 
+const FEATURED_ONE_WORDS = [
+  'Jesus',
+  'Salvation',
+  'Faith',
+  'Church',
+  'God',
+  'Gospel',
+  'Prayer',
+  'Grace',
+  'Hope',
+  'Love',
+  'Atonement',
+  'Forgiveness',
+  'Resurrection',
+  'Judgment',
+  'Repentance',
+  'Spirit',
+]
+
+const FEATURED_SET = new Set(FEATURED_ONE_WORDS)
+
+function isOneWord(name: string) {
+  return /^[\p{L}']+$/u.test(name.trim())
+}
+
+let oneWordNames: string[] | undefined
+
+function allOneWordNames() {
+  if (!oneWordNames) {
+    const set = new Set<string>(FEATURED_ONE_WORDS)
+    for (const t of TOPICS) {
+      if (isOneWord(t.name)) set.add(t.name)
+    }
+    for (const t of INDEX.topics) {
+      if (isOneWord(t.name)) set.add(t.name)
+    }
+    oneWordNames = [...set]
+  }
+  return oneWordNames
+}
+
+export function featuredOneWords() {
+  return FEATURED_ONE_WORDS
+}
+
+/** One-word Nave headwords and featured topics for the Topics search bar. */
+export function oneWordSuggestions(q: string, limit = 8): string[] {
+  const n = q.trim().toLowerCase()
+  if (!n) return FEATURED_ONE_WORDS
+  const starts: string[] = []
+  const rest: string[] = []
+  for (const name of allOneWordNames()) {
+    const low = name.toLowerCase()
+    if (low === n) continue
+    if (low.startsWith(n)) starts.push(name)
+    else if (n.length >= 2 && low.includes(n)) rest.push(name)
+  }
+  const rank = (a: string, b: string) => {
+    const fa = FEATURED_SET.has(a)
+    const fb = FEATURED_SET.has(b)
+    if (fa !== fb) return fa ? -1 : 1
+    return a.localeCompare(b)
+  }
+  starts.sort(rank)
+  rest.sort(rank)
+  return [...starts, ...rest].slice(0, limit)
+}
+
 export function naveTopicName(slug: string) {
   return NAME_BY_SLUG.get(slug) ?? slug
 }

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '../App'
 import { bookName } from '../data/kjv'
+import { featuredOneWords, oneWordSuggestions } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import {
   searchStudy,
@@ -56,6 +57,12 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   const [q, setQ] = useState(fromUrl)
   const [results, setResults] = useState<StudyResults | null>(null)
   const [loading, setLoading] = useState(false)
+  const [suggestOpen, setSuggestOpen] = useState(false)
+  const [active, setActive] = useState(0)
+  const boxRef = useRef<HTMLDivElement>(null)
+
+  const suggestions = useMemo(() => (q.trim() ? oneWordSuggestions(q, 8) : []), [q])
+  const chips = featuredOneWords()
 
   useEffect(() => {
     setQ(fromUrl)
@@ -83,19 +90,88 @@ export function TopicsPage({ search = '' }: { search?: string }) {
     }
   }, [q])
 
+  useEffect(() => {
+    setActive(0)
+  }, [suggestions])
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (!boxRef.current?.contains(e.target as Node)) setSuggestOpen(false)
+    }
+    document.addEventListener('mousedown', onDoc)
+    return () => document.removeEventListener('mousedown', onDoc)
+  }, [])
+
+  function pick(word: string) {
+    setQ(word)
+    setSuggestOpen(false)
+  }
+
   const searching = q.trim().length >= 2
   const total = results ? STUDY_ORDER.reduce((n, src) => n + results[src].length, 0) : 0
+  const showList = suggestOpen && suggestions.length > 0
 
   return (
     <article className="page">
       <h1>Topics</h1>
-      <input
-        className="search-input"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Search topics"
-        aria-label="Search topics"
-      />
+      <div className="topic-search" ref={boxRef}>
+        <input
+          className="search-input"
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value)
+            setSuggestOpen(true)
+          }}
+          onFocus={() => setSuggestOpen(true)}
+          onKeyDown={(e) => {
+            if (!showList) return
+            if (e.key === 'ArrowDown') {
+              e.preventDefault()
+              setActive((i) => (i + 1) % suggestions.length)
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault()
+              setActive((i) => (i - 1 + suggestions.length) % suggestions.length)
+            } else if (e.key === 'Enter' && suggestions[active]) {
+              e.preventDefault()
+              pick(suggestions[active])
+            } else if (e.key === 'Escape') {
+              setSuggestOpen(false)
+            }
+          }}
+          placeholder="Search topics"
+          aria-label="Search topics"
+          aria-autocomplete="list"
+          aria-expanded={showList}
+          aria-controls="topic-suggest"
+          autoComplete="off"
+          role="combobox"
+        />
+        {showList ? (
+          <ul id="topic-suggest" className="topic-suggest" role="listbox">
+            {suggestions.map((word, i) => (
+              <li key={word} role="option" aria-selected={i === active}>
+                <button
+                  type="button"
+                  className={i === active ? 'on' : undefined}
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => pick(word)}
+                >
+                  {word}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      {!searching ? (
+        <div className="topic-chips" aria-label="Suggested topics">
+          {chips.map((word) => (
+            <button type="button" key={word} onClick={() => pick(word)}>
+              {word}
+            </button>
+          ))}
+        </div>
+      ) : null}
       {searching ? (
         <>
           {loading && !results ? <p className="lead">Searching…</p> : null}

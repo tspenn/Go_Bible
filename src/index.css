@@ -194,6 +194,61 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   font: inherit;
   color: var(--text);
 }
+
+.topic-search {
+  position: relative;
+  margin: 0 0 0.75rem;
+}
+.topic-search .search-input { margin: 0; }
+.topic-suggest {
+  position: absolute;
+  z-index: 8;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #d9d3c9;
+  border-top: 0;
+  box-shadow: 0 8px 18px rgba(61, 61, 61, 0.08);
+}
+.topic-suggest button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+.topic-suggest button:hover,
+.topic-suggest button.on {
+  background: #efe6d2;
+  color: var(--blue-deep);
+}
+.topic-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.75rem;
+}
+.topic-chips button {
+  font: inherit;
+  font-size: 0.9rem;
+  background: #fff;
+  border: 1px solid #d9d3c9;
+  color: var(--blue-deep);
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+}
+.topic-chips button:hover {
+  border-color: var(--blue);
+  color: var(--blue-deep);
+}
 .search button {
   background: var(--blue);
   color: var(--cream);
