@@ -26,6 +26,27 @@ export const bibleBooks = data.books.map((b) => ({
   chapterCount: b.chapters.length,
 }))
 
+export type BibleBook = (typeof bibleBooks)[number]
+export type Testament = 'ot' | 'nt'
+
+const NT_FIRST = 'matthew'
+
+export function testamentOf(slug: string): Testament {
+  const nt = bibleBooks.findIndex((b) => b.slug === NT_FIRST)
+  const i = bibleBooks.findIndex((b) => b.slug === slug)
+  return i >= 0 && nt >= 0 && i >= nt ? 'nt' : 'ot'
+}
+
+export function booksInTestament(t: Testament): BibleBook[] {
+  const nt = bibleBooks.findIndex((b) => b.slug === NT_FIRST)
+  if (nt < 0) return t === 'nt' ? [] : bibleBooks
+  return t === 'nt' ? bibleBooks.slice(nt) : bibleBooks.slice(0, nt)
+}
+
+export function findBook(slug: string) {
+  return bibleBooks.find((b) => b.slug === slug)
+}
+
 export const BOOKS = bibleBooks.map((b) => b.name)
 
 export function slugBook(book: string) {

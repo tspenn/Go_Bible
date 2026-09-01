@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
 import { dictForWord, dictSpansInText, type DictEntry } from '../data/dictionary'
 import { phraseSpan } from '../data/scofield'
 import {
@@ -21,16 +21,39 @@ export type WordPopup =
   | { kind: 'strongs'; hit: StrongsHit }
   | { kind: 'dict'; entry: DictEntry; word: string; verse: number; x: number; y: number }
 
-function ActivableWord({
+export type MineMark = {
+  phrase: string
+  glyph: string
+  title: string
+  onOpen: () => void
+  key: string
+}
+
+export type WashSpan = {
+  phrase: string
+  color: string
+}
+
+function Pressable({
+  as = 'span',
+  className,
+  title,
+  style,
+  onShort,
+  onHold,
   children,
-  onActivate,
 }: {
+  as?: 'span' | 'button'
+  className?: string
+  title?: string
+  style?: CSSProperties
+  onShort?: (x: number, y: number) => void
+  onHold?: (x: number, y: number) => void
   children: ReactNode
-  onActivate: (x: number, y: number) => void
 }) {
   const timer = useRef<number>(0)
   const origin = useRef({ x: 0, y: 0 })
-  const opened = useRef(false)
+  const held = useRef(false)
 
   function clear() {
     if (timer.current) {
@@ -39,55 +62,72 @@ function ActivableWord({
     }
   }
 
-  function fire(target: HTMLElement) {
-    opened.current = true
-    window.getSelection()?.removeAllRanges()
+  function point(target: HTMLElement) {
     const box = target.getBoundingClientRect()
-    onActivate(box.left, box.bottom)
+    return { x: box.left, y: box.bottom }
   }
 
-  function onPointerDown(e: PointerEvent<HTMLSpanElement>) {
+  function onPointerDown(e: PointerEvent<HTMLElement>) {
     if (e.pointerType === 'mouse' && e.button !== 0) return
-    opened.current = false
+    held.current = false
     origin.current = { x: e.clientX, y: e.clientY }
     const target = e.currentTarget
     clear()
+    if (!onHold) return
     timer.current = window.setTimeout(() => {
       timer.current = 0
-      fire(target)
+      held.current = true
+      window.getSelection()?.removeAllRanges()
+      const { x, y } = point(target)
+      onHold(x, y)
     }, HOLD_MS)
   }
 
-  function onPointerMove(e: PointerEvent<HTMLSpanElement>) {
-    if (!timer.current && !opened.current) return
+  function onPointerMove(e: PointerEvent<HTMLElement>) {
+    if (!timer.current && !held.current) return
     const dx = e.clientX - origin.current.x
     const dy = e.clientY - origin.current.y
     if (dx * dx + dy * dy > MOVE_PX * MOVE_PX) clear()
   }
 
-  function onPointerUp(e: PointerEvent<HTMLSpanElement>) {
+  function onPointerUp(e: PointerEvent<HTMLElement>) {
     const hadTimer = timer.current !== 0
     clear()
-    if (opened.current) return
+    if (held.current) {
+      e.preventDefault()
+      e.stopPropagation()
+      return
+    }
     const dx = e.clientX - origin.current.x
     const dy = e.clientY - origin.current.y
     if (dx * dx + dy * dy > MOVE_PX * MOVE_PX) return
-    if (hadTimer || e.pointerType === 'mouse') fire(e.currentTarget)
+    if (!onShort) return
+    if (hadTimer || e.pointerType === 'mouse') {
+      const { x, y } = point(e.currentTarget)
+      onShort(x, y)
+    }
   }
 
-  return (
-    <span
-      className="word-hit"
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={clear}
-      onPointerLeave={clear}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      {children}
-    </span>
-  )
+  const props = {
+    className,
+    title,
+    style,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    onPointerCancel: clear,
+    onPointerLeave: clear,
+    onContextMenu: (e: { preventDefault: () => void }) => e.preventDefault(),
+  }
+
+  if (as === 'button') {
+    return (
+      <button type="button" {...props}>
+        {children}
+      </button>
+    )
+  }
+  return <span {...props}>{children}</span>
 }
 
 type RwpMark = { word: string; letter: string; title: string; onOpen: () => void }
@@ -105,12 +145,14 @@ function WordBits({
   dict,
   onOpen,
   rwpMarks,
+  onMark,
 }: {
   text: string
   verse: number
   dict: DictEntry[]
   onOpen: (popup: WordPopup) => void
   rwpMarks: RwpMark[]
+  onMark?: (phrase: string, x: number, y: number) => void
 }) {
   const leftover = [...rwpMarks]
   const bits = text.split(/(\s+)/)
@@ -128,12 +170,16 @@ function WordBits({
         {mark.letter}
       </button>
     ) : null
+    const phrase = peeled?.core ?? bit
+    const hold = onMark ? (x: number, y: number) => onMark(phrase, x, y) : undefined
 
     if (peeled && (entry || dictHit)) {
       return (
         <span key={i}>
-          <ActivableWord
-            onActivate={(x, y) => {
+          <Pressable
+            className="word-hit"
+            onHold={hold}
+            onShort={(x, y) => {
               if (entry) {
                 onOpen({ kind: 'strongs', hit: { entry, word: peeled.core, verse, x, y } })
                 return
@@ -144,14 +190,16 @@ function WordBits({
             }}
           >
             {bit}
-          </ActivableWord>
+          </Pressable>
           {letter}
         </span>
       )
     }
     return (
       <span key={i}>
-        {bit}
+        <Pressable className="word-hit" onHold={hold}>
+          {bit}
+        </Pressable>
         {letter}
       </span>
     )
@@ -174,6 +222,9 @@ export function VerseWords({
   onOpen,
   rwpMarks,
   scoMarks,
+  washes,
+  mineMarks,
+  onMark,
 }: {
   text: string
   verse: number
@@ -181,8 +232,12 @@ export function VerseWords({
   onOpen: (popup: WordPopup) => void
   rwpMarks?: RwpMark[]
   scoMarks?: ScoMark[]
+  washes?: WashSpan[]
+  mineMarks?: MineMark[]
+  onMark?: (phrase: string, x: number, y: number) => void
 }) {
   const rwp = rwpMarks ?? []
+  const mine = mineMarks ?? []
   const sco = (scoMarks ?? [])
     .map((mark) => {
       const span = mark.phrase ? phraseSpan(text, mark.phrase) : null
@@ -196,21 +251,27 @@ export function VerseWords({
       return span ? { start: span.start, end: span.end, mark } : null
     })
     .filter((x): x is { start: number; end: number; mark: RwpMark } => x != null)
+  const washSpans = (washes ?? [])
+    .map((w) => {
+      const span = phraseSpan(text, w.phrase)
+      return span ? { start: span.start, end: span.end, color: w.color } : null
+    })
+    .filter((x): x is { start: number; end: number; color: string } => x != null)
+  const mineSpans = mine
+    .map((mark) => {
+      const span = phraseSpan(text, mark.phrase)
+      return span ? { start: span.start, end: span.end, mark } : null
+    })
+    .filter((x): x is { start: number; end: number; mark: MineMark } => x != null)
 
-  if (sco.length === 0 && names.length === 0) {
-    return <WordBits text={text} verse={verse} dict={dict} onOpen={onOpen} rwpMarks={rwp} />
+  if (sco.length === 0 && names.length === 0 && washSpans.length === 0 && mineSpans.length === 0) {
+    return (
+      <WordBits text={text} verse={verse} dict={dict} onOpen={onOpen} rwpMarks={rwp} onMark={onMark} />
+    )
   }
 
   const cuts = new Set<number>([0, text.length])
-  for (const r of sco) {
-    cuts.add(r.start)
-    cuts.add(r.end)
-  }
-  for (const r of names) {
-    cuts.add(r.start)
-    cuts.add(r.end)
-  }
-  for (const r of rwpSpans) {
+  for (const r of [...sco, ...names, ...rwpSpans, ...washSpans, ...mineSpans]) {
     cuts.add(r.start)
     cuts.add(r.end)
   }
@@ -224,52 +285,61 @@ export function VerseWords({
     const slice = text.slice(from, to)
     const scoHere = sco.find((r) => r.start <= from && r.end >= to)
     const dictHere = names.find((r) => r.start <= from && r.end >= to)
+    const washHere = washSpans.find((r) => r.start <= from && r.end >= to)
+    const style = washHere ? { backgroundColor: washHere.color } : undefined
+    const holdPhrase = scoHere?.mark.phrase ?? dictHere?.matched ?? slice.trim()
+    const hold = onMark && holdPhrase ? (x: number, y: number) => onMark(holdPhrase, x, y) : undefined
 
     if (scoHere) {
       const className = dictHere ? 'sco-phrase dict-hit' : 'sco-phrase'
       chunks.push(
-        <button
+        <Pressable
           key={`s${from}-${scoHere.mark.key}`}
-          type="button"
+          as="button"
           className={className}
           title={scoHere.mark.title}
-          onClick={scoHere.mark.onOpen}
+          style={style}
+          onHold={hold}
+          onShort={scoHere.mark.onOpen ? () => scoHere.mark.onOpen() : undefined}
         >
           {slice}
-        </button>,
+        </Pressable>,
       )
     } else if (dictHere) {
       chunks.push(
-        <button
+        <Pressable
           key={`d${from}-${dictHere.entry.slug}`}
-          type="button"
+          as="button"
           className="dict-hit"
           title={dictHere.entry.name}
-          onClick={(e) => {
-            const box = e.currentTarget.getBoundingClientRect()
+          style={style}
+          onHold={hold}
+          onShort={(x, y) => {
             onOpen({
               kind: 'dict',
               entry: dictHere.entry,
               word: slice,
               verse,
-              x: box.left,
-              y: box.bottom,
+              x,
+              y,
             })
           }}
         >
           {slice}
-        </button>,
+        </Pressable>,
       )
     } else {
       chunks.push(
-        <WordBits
-          key={`t${from}`}
-          text={slice}
-          verse={verse}
-          dict={dict}
-          onOpen={onOpen}
-          rwpMarks={[]}
-        />,
+        <span key={`t${from}`} className={washHere ? 'word-wash' : undefined} style={style}>
+          <WordBits
+            text={slice}
+            verse={verse}
+            dict={dict}
+            onOpen={onOpen}
+            rwpMarks={[]}
+            onMark={onMark}
+          />
+        </span>,
       )
     }
 
@@ -296,6 +366,19 @@ export function VerseWords({
           onClick={mark.mark.onOpen}
         >
           {mark.mark.letter}
+        </button>,
+      )
+    }
+    for (const mark of mineSpans.filter((r) => r.end === to)) {
+      chunks.push(
+        <button
+          key={`mine-${mark.mark.key}`}
+          type="button"
+          className="mine-mark"
+          title={mark.mark.title}
+          onClick={mark.mark.onOpen}
+        >
+          {mark.mark.glyph}
         </button>,
       )
     }

@@ -1,6 +1,15 @@
 import { Link } from '../App'
 import { linkBodyBits, type DictEntry } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
+import {
+  isBookmarked,
+  mineGlyph,
+  penLabel,
+  removeNote,
+  toggleBookmark,
+  useMarks,
+  type UserNote,
+} from '../data/marks'
 import type { NaveTopic } from '../data/naves'
 import {
   isRobertsonBook,
@@ -14,7 +23,7 @@ import {
   type ScofieldNote,
 } from '../data/scofield'
 
-export type SheetFocus = 'scofield' | 'henry' | 'dictionary' | 'topics' | 'robertson' | null
+export type SheetFocus = 'scofield' | 'henry' | 'dictionary' | 'topics' | 'robertson' | 'mine' | null
 
 export function NotesSheet({
   bookName,
@@ -30,6 +39,9 @@ export function NotesSheet({
   highlightKey,
   onClose,
   onDictName,
+  signedIn = false,
+  mineNotes = [],
+  mineFocusId,
 }: {
   bookName: string
   bookSlug: string
@@ -44,9 +56,14 @@ export function NotesSheet({
   highlightKey: string | null
   onClose: () => void
   onDictName?: (entry: DictEntry, x: number, y: number) => void
+  signedIn?: boolean
+  mineNotes?: UserNote[]
+  mineFocusId?: string | null
 }) {
+  const marks = useMarks()
   const rwpBook = isRobertsonBook(bookSlug)
   const showRwp = robertson.length > 0 || focus === 'robertson'
+  const bookmarked = isBookmarked(bookSlug, chapter, verse)
 
   return (
     <aside className="notes-sheet" role="dialog" aria-label={`Notes on ${bookName} ${chapter}:${verse}`}>
@@ -54,10 +71,56 @@ export function NotesSheet({
         <h2>
           {bookName} {chapter}:{verse}
         </h2>
-        <button type="button" className="notes-close" onClick={onClose} aria-label="Close notes">
-          Close
-        </button>
+        <div className="notes-sheet-tools">
+          {signedIn ? (
+            <button
+              type="button"
+              className={`ribbon-btn${bookmarked ? ' on' : ''}`}
+              aria-pressed={bookmarked}
+              onClick={() => void toggleBookmark(bookSlug, chapter, verse)}
+            >
+              <span className="ribbon-icon" aria-hidden="true" />
+              {bookmarked ? 'Bookmarked' : 'Bookmark'}
+            </button>
+          ) : (
+            <Link className="ribbon-btn" to={`/login?next=${encodeURIComponent(`/bible/${bookSlug}/${chapter}/${verse}`)}`}>
+              Sign in to bookmark
+            </Link>
+          )}
+          <button type="button" className="notes-close" onClick={onClose} aria-label="Close notes">
+            Close
+          </button>
+        </div>
       </div>
+
+      {signedIn && (
+        <section id="sheet-mine" className={focus === 'mine' ? 'note-on' : undefined}>
+          <p className="source-line">My note</p>
+          {mineNotes.length === 0 && (
+            <p>Press and hold a word or phrase in the verse to add your own note.</p>
+          )}
+          {mineNotes.map((n, i) => (
+            <div
+              key={n.id}
+              id={`mine-${n.id}`}
+              className={mineFocusId === n.id || highlightKey === n.id ? 'note-on' : undefined}
+            >
+              <h3>
+                <span className="mine-mark-label">{mineGlyph(i, mineNotes.length)}</span>
+                {n.phrase ? ` “${n.phrase}”` : ''}
+                {n.subject ? ` · ${n.subject}` : ''}
+              </h3>
+              <p>{n.text}</p>
+              {n.color && (
+                <p className="fine">Pen: {penLabel(n.color, marks.penNames)}</p>
+              )}
+              <button type="button" className="mark-back" onClick={() => void removeNote(n.id)}>
+                Remove this note
+              </button>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section id="sheet-scofield" className={focus === 'scofield' ? 'note-on' : undefined}>
         <p className="source-line">Scofield Reference Bible notes, 1917 (public domain)</p>

@@ -2,11 +2,15 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
+import { AuthProvider, useAuth } from './lib/auth'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
 import { BiblePage } from './pages/BiblePage'
 import { VersePage } from './pages/VersePage'
+import { NotebookPage } from './pages/NotebookPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { LoginPage } from './pages/LoginPage'
 
 function useLocation() {
   const [loc, setLoc] = useState(() => ({
@@ -129,10 +133,33 @@ function Screen({
           hash={hash}
         />
       )
+    case 'notebook':
+      return <NotebookPage />
+    case 'settings':
+      return <SettingsPage />
+    case 'login':
+      return <LoginPage search={search} />
   }
 }
 
-export default function App() {
+function MastNav() {
+  const { user, signOut } = useAuth()
+  return (
+    <nav className="mast-nav" aria-label="Account">
+      <Link to="/settings">Settings</Link>
+      {user ? <Link to="/notebook">Notebook</Link> : null}
+      {user ? (
+        <button type="button" className="mast-auth" onClick={() => void signOut().then(() => navigate('/'))}>
+          Sign out
+        </button>
+      ) : (
+        <Link to="/login">Sign in</Link>
+      )}
+    </nav>
+  )
+}
+
+function AppShell() {
   const loc = useLocation()
   const route = parsePath(loc.pathname)
 
@@ -143,10 +170,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="masthead">
-        <Link to="/bible" className="brand">
+        <Link to="/" className="brand">
           <span className="brand-name">Go-Bible</span>
         </Link>
         <HeaderSearch />
+        <MastNav />
         <a href="https://faith.skylandpublishing.com/catalog" className="shop">
           Shop
         </a>
@@ -163,5 +191,13 @@ export default function App() {
         <p className="fine">© 2026 Skyland Publishing – Skyland Reach LLC</p>
       </footer>
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   )
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, navigate } from '../App'
-import { chapterCount, findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
+import { findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
 import { topicsForVerse } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
@@ -11,8 +11,12 @@ import {
   rwpKey,
   type RobertsonNote,
 } from '../data/robertson'
+import { BookPicker } from '../components/BookPicker'
+import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu'
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
 import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
+import { mineGlyph, notesForVerse, useMarks, washesForVerse, type UserNote } from '../data/marks'
+import { useAuth } from '../lib/auth'
 import { parseVerseQuery } from '../router'
 
 export function VersePage({
@@ -28,6 +32,8 @@ export function VersePage({
   search?: string
   hash?: string
 }) {
+  const { user } = useAuth()
+  const marks = useMarks()
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
   const focus = verse ?? selected?.verse
@@ -71,7 +77,6 @@ export function VersePage({
     return map
   }, [rwpMarked])
 
-  const totalChapters = chapterCount(bookSlug)
   const query = parseVerseQuery(search, hash)
 
   const sheetVerse = verse ?? focus
@@ -80,17 +85,21 @@ export function VersePage({
       verse != null ||
       parseVerseQuery(search, hash).tab === 'robertson' ||
       parseVerseQuery(search, hash).tab === 'scofield' ||
-      parseVerseQuery(search, hash).tab === 'henry',
+      parseVerseQuery(search, hash).tab === 'henry' ||
+      parseVerseQuery(search, hash).tab === 'mine',
   )
   const [sheetFocus, setSheetFocus] = useState<SheetFocus>(() => {
     const tab = parseVerseQuery(search, hash).tab
     if (tab === 'robertson') return 'robertson'
     if (tab === 'scofield') return 'scofield'
     if (tab === 'henry') return 'henry'
+    if (tab === 'mine') return 'mine'
     return null
   })
   const [highlightKey, setHighlightKey] = useState<string | null>(null)
   const [wordPopup, setWordPopup] = useState<WordPopup | null>(null)
+  const [markRequest, setMarkRequest] = useState<MarkRequest | null>(null)
+  const [signInAsk, setSignInAsk] = useState<{ x: number; y: number } | null>(null)
   const closeWord = useCallback(() => setWordPopup(null), [])
 
   useEffect(() => {
@@ -100,7 +109,9 @@ export function VersePage({
         ? `rwp-${rwpMarked.find((n) => n.key === highlightKey)?.letter ?? ''}`
         : sheetFocus === 'scofield' && highlightKey
           ? `note-${highlightKey}`
-          : `sheet-${sheetFocus}`
+          : sheetFocus === 'mine' && highlightKey
+            ? `mine-${highlightKey}`
+            : `sheet-${sheetFocus}`
     if (!id || id.endsWith('-')) return
     requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ block: 'nearest' }))
   }, [sheetOpen, sheetFocus, highlightKey, rwpMarked])
@@ -118,15 +129,27 @@ export function VersePage({
   }, [bookSlug, chapter, closeWord])
 
   useEffect(() => {
-    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield' || query.tab === 'henry') {
+    if (
+      verse != null ||
+      query.tab === 'robertson' ||
+      query.tab === 'scofield' ||
+      query.tab === 'henry' ||
+      query.tab === 'mine'
+    ) {
       setSheetOpen(true)
       if (query.tab === 'robertson') setSheetFocus('robertson')
       else if (query.tab === 'scofield') setSheetFocus('scofield')
       else if (query.tab === 'henry') setSheetFocus('henry')
+      else if (query.tab === 'mine' && user) setSheetFocus('mine')
     } else {
       setSheetOpen(false)
     }
-  }, [bookSlug, chapter, verse, query.tab])
+  }, [bookSlug, chapter, verse, query.tab, user])
+
+  useEffect(() => {
+    if (!sheetOpen || query.tab !== 'mine' || !user) return
+    setHighlightKey(query.note ?? query.highlight ?? null)
+  }, [sheetOpen, query.tab, query.note, query.highlight, user])
 
   useEffect(() => {
     if (!sheetOpen || query.tab !== 'robertson') return
@@ -186,12 +209,28 @@ export function VersePage({
     navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=scofield`)
   }
 
+  function openMine(note: UserNote) {
+    closeWord()
+    setMarkRequest(null)
+    setSignInAsk(null)
+    setSheetFocus('mine')
+    setHighlightKey(note.id)
+    setSheetOpen(true)
+    navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=mine&note=${note.id}`)
+  }
+
   function closeSheet() {
     closeWord()
     setSheetOpen(false)
     setSheetFocus(null)
     setHighlightKey(null)
-    if (verse != null || query.tab === 'robertson' || query.tab === 'scofield' || query.tab === 'henry') {
+    if (
+      verse != null ||
+      query.tab === 'robertson' ||
+      query.tab === 'scofield' ||
+      query.tab === 'henry' ||
+      query.tab === 'mine'
+    ) {
       navigate(`/bible/${bookSlug}/${chapter}`)
     }
   }
@@ -209,6 +248,23 @@ export function VersePage({
   const sheetDict = sheetVerse != null ? dictForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetTopics = sheetVerse != null ? topicsForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetRwp = sheetVerse != null ? (rwpByVerse.get(sheetVerse) ?? []) : []
+  const sheetMine =
+    user && sheetVerse != null
+      ? marks.notes
+          .filter((n) => n.bookSlug === bookSlug && n.chapter === chapter && n.verse === sheetVerse)
+          .sort((a, b) => a.createdAt - b.createdAt)
+      : []
+
+  function onMark(verseNum: number, phrase: string, x: number, y: number) {
+    closeWord()
+    if (!user) {
+      setMarkRequest(null)
+      setSignInAsk({ x, y })
+      return
+    }
+    setSignInAsk(null)
+    setMarkRequest({ bookSlug, chapter, verse: verseNum, phrase, x, y })
+  }
 
   if (!list.length && !selected) {
     return (
@@ -226,29 +282,17 @@ export function VersePage({
   return (
     <article className={`page reading${sheetOpen ? ' with-notes' : ''}`}>
       <div className="reader">
+        <BookPicker selectedBook={bookSlug} selectedChapter={chapter} />
         <h1>
           {bookName} {chapter}
         </h1>
-        {totalChapters > 1 && (
-          <nav className="chapter-index" aria-label="Chapters">
-            {Array.from({ length: totalChapters }, (_, i) => i + 1).map((n) => (
-              <Link
-                key={n}
-                to={`/bible/${bookSlug}/${n}`}
-                className={n === chapter ? 'on' : undefined}
-              >
-                {n}
-              </Link>
-            ))}
-          </nav>
-        )}
 
         <div className="chapter">
           <p className="source-line">
             {SOURCE_LINE} Verse numbers open notes. Small letters open Scofield or Robertson.
           </p>
           {list.map((v) => {
-            const marks = byVerse.get(v.verse) ?? []
+            const marksOnVerse = byVerse.get(v.verse) ?? []
             const rwpNotes = rwpByVerse.get(v.verse) ?? []
             const onWord = rwpNotes.filter(
               (n) =>
@@ -259,8 +303,10 @@ export function VersePage({
             )
             const afterVerse = rwpNotes.filter((n) => !onWord.includes(n))
             const dict = dictForVerse(bookSlug, chapter, v.verse)
-            const scoOnPhrase = marks.filter((n) => n.webPhrase && phraseSpan(v.text, n.webPhrase))
-            const scoVerseLevel = marks.filter((n) => !n.webPhrase || !phraseSpan(v.text, n.webPhrase))
+            const scoOnPhrase = marksOnVerse.filter((n) => n.webPhrase && phraseSpan(v.text, n.webPhrase))
+            const scoVerseLevel = marksOnVerse.filter((n) => !n.webPhrase || !phraseSpan(v.text, n.webPhrase))
+            const mineNotes = user ? notesForVerse(bookSlug, chapter, v.verse) : []
+            const washes = user ? washesForVerse(bookSlug, chapter, v.verse) : []
             return (
               <p
                 key={v.verse}
@@ -292,6 +338,15 @@ export function VersePage({
                     onOpen: () => openScofield(n),
                     key: n.key,
                   }))}
+                  washes={washes}
+                  mineMarks={mineNotes.map((n, i) => ({
+                    phrase: n.phrase,
+                    glyph: mineGlyph(i, mineNotes.length),
+                    title: n.subject ? `My note: ${n.subject}` : 'My note',
+                    onOpen: () => openMine(n),
+                    key: n.id,
+                  }))}
+                  onMark={(phrase, x, y) => onMark(v.verse, phrase, x, y)}
                 />
                 {scoVerseLevel.map((n) => (
                   <button
@@ -331,6 +386,27 @@ export function VersePage({
       )}
       {wordPopup?.kind === 'dict' && <DictCard popup={wordPopup} onClose={closeWord} />}
 
+      {markRequest && (
+        <MarkMenu
+          request={markRequest}
+          onClose={() => setMarkRequest(null)}
+          onSavedNote={(noteId) => {
+            const note = notesForVerse(markRequest.bookSlug, markRequest.chapter, markRequest.verse).find(
+              (n) => n.id === noteId,
+            )
+            if (note) openMine(note)
+          }}
+        />
+      )}
+      {signInAsk && (
+        <SignInPrompt
+          x={signInAsk.x}
+          y={signInAsk.y}
+          onClose={() => setSignInAsk(null)}
+          next={`/bible/${bookSlug}/${chapter}${focus ? `/${focus}` : ''}`}
+        />
+      )}
+
       {sheetOpen && sheetVerse != null && (
         <>
           <button type="button" className="notes-backdrop" aria-label="Close notes" onClick={closeSheet} />
@@ -347,6 +423,9 @@ export function VersePage({
             focus={sheetFocus}
             highlightKey={highlightKey}
             onClose={closeSheet}
+            signedIn={Boolean(user)}
+            mineNotes={sheetMine}
+            mineFocusId={query.note}
             onDictName={(entry, x, y) =>
               setWordPopup({
                 kind: 'dict',

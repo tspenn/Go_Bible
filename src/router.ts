@@ -3,6 +3,9 @@ export type Route =
   | { name: 'topics' }
   | { name: 'topic'; slug: string }
   | { name: 'bible' }
+  | { name: 'notebook' }
+  | { name: 'settings' }
+  | { name: 'login' }
   | { name: 'verse'; bookSlug: string; chapter: number; verse: number }
   | { name: 'chapter'; bookSlug: string; chapter: number }
 
@@ -12,6 +15,8 @@ export function parseVerseQuery(search = '', hash = '') {
   return {
     tab: params.get('tab') ?? undefined,
     w: params.get('w') ?? undefined,
+    note: params.get('note') ?? undefined,
+    highlight: params.get('highlight') ?? undefined,
     rwpLetter: fragment.startsWith('rwp-') ? fragment.slice(4) : undefined,
   }
 }
@@ -22,6 +27,9 @@ export function parsePath(pathname: string): Route {
   if (parts.length === 0) return { name: 'home' }
   if (parts[0] === 'topics' && parts[1]) return { name: 'topic', slug: parts[1] }
   if (parts[0] === 'topics') return { name: 'topics' }
+  if (parts[0] === 'notebook') return { name: 'notebook' }
+  if (parts[0] === 'settings') return { name: 'settings' }
+  if (parts[0] === 'login') return { name: 'login' }
   if (parts[0] === 'bible' && parts[1] && parts[2] && parts[3]) {
     return {
       name: 'verse',
@@ -47,6 +55,12 @@ export function href(route: Route): string {
       return `/topics/${route.slug}`
     case 'bible':
       return '/bible'
+    case 'notebook':
+      return '/notebook'
+    case 'settings':
+      return '/settings'
+    case 'login':
+      return '/login'
     case 'chapter':
       return `/bible/${route.bookSlug}/${route.chapter}`
     case 'verse':
