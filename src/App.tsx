@@ -193,6 +193,9 @@ function Dock({ routeName }: { routeName: Route['name'] }) {
       <Link to="/bible" className={bibleOn(routeName) ? 'on' : undefined} aria-current={bibleOn(routeName) ? 'page' : undefined}>
         Bible
       </Link>
+      <Link to="/about" className={routeName === 'about' ? 'on' : undefined} aria-current={routeName === 'about' ? 'page' : undefined}>
+        About
+      </Link>
       <Link to="/topics" className={topicsOn(routeName) ? 'on' : undefined} aria-current={topicsOn(routeName) ? 'page' : undefined}>
         Topics
       </Link>
@@ -227,16 +230,17 @@ function AppShell() {
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />
       </main>
-      <footer>
-        <p>A companion to Walking By Faith · Skyland Publishing – Skyland Reach LLC</p>
-        <p className="fine">
-          <Link to="/about">About</Link>
-          {' · '}
-          <Link to="/settings">How to use</Link>
-        </p>
-        <p className="fine">© 2026 Skyland Publishing – Skyland Reach LLC</p>
-      </footer>
-      <Dock routeName={route.name} />
+      <div className="bottom-chrome">
+        <Dock routeName={route.name} />
+        <footer>
+          <p>A companion to Walking By Faith Magazine</p>
+          <p className="fine">
+            <Link to="/settings">How to use</Link>
+            {' · '}
+            © 2026 Skyland Publishing – Skyland Reach LLC
+          </p>
+        </footer>
+      </div>
     </div>
   )
 }

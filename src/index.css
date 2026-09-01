@@ -10,6 +10,8 @@
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'Source Sans 3', system-ui, sans-serif;
   --dock-h: 3.85rem;
+  --footer-h: 3.7rem;
+  --chrome-h: calc(var(--dock-h) + var(--footer-h));
 }
 
 * { box-sizing: border-box; }
@@ -27,7 +29,7 @@ body {
 a { color: var(--blue-deep); text-decoration: none; }
 a:hover { color: var(--gold); }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: var(--dock-h); }
+.app { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: calc(var(--chrome-h) + env(safe-area-inset-bottom, 0)); }
 
 .masthead {
   background: var(--blue);
@@ -933,7 +935,7 @@ a.tsk-go:active {
     z-index: 15;
     left: 0;
     right: 0;
-    bottom: var(--dock-h);
+    bottom: calc(var(--chrome-h) + env(safe-area-inset-bottom, 0));
     max-height: 58vh;
     overflow: auto;
     margin: 0;
@@ -959,29 +961,35 @@ a.tsk-go:active {
   }
 }
 
-footer {
-  background: var(--blue);
-  color: var(--cream);
-  padding: 1.5rem;
-  font-size: 0.9rem;
-}
-footer p { margin: 0.25rem 0; }
-footer .fine { opacity: 0.85; font-size: 0.8rem; }
-footer a { color: var(--cream); }
-footer a:hover { color: var(--gold); }
-
-.dock {
+.bottom-chrome {
   position: fixed;
   z-index: 16;
   left: 0;
   right: 0;
   bottom: 0;
+  background: var(--blue);
+}
+
+footer {
+  background: var(--blue);
+  color: var(--cream);
+  padding: 0.45rem 1rem calc(0.55rem + env(safe-area-inset-bottom, 0));
+  font-size: 0.85rem;
+  text-align: center;
+}
+footer p { margin: 0.15rem 0; }
+footer .fine { opacity: 0.85; font-size: 0.78rem; }
+footer a { color: var(--cream); }
+footer a:hover { color: var(--gold); }
+
+.dock {
   height: var(--dock-h);
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   background: var(--blue);
   border-top: 1px solid rgba(247, 245, 242, 0.28);
-  padding: 0 0.2rem env(safe-area-inset-bottom, 0);
+  border-bottom: 1px solid rgba(247, 245, 242, 0.18);
+  padding: 0 0.2rem;
 }
 .dock a {
   display: flex;
