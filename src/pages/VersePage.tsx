@@ -23,7 +23,7 @@ import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components
 import { mineGlyph, notesForVerse, useMarks, washesForVerse, type UserNote } from '../data/marks'
 import { tskForVerse, ensureTskBook, useTsk } from '../data/tsk'
 import { useAuth } from '../lib/auth'
-import { parseVerseQuery } from '../router'
+import { parseVerseQuery, isNoteTab } from '../router'
 
 export function VersePage({
   bookSlug,
@@ -97,19 +97,12 @@ export function VersePage({
 
   const sheetVerse = verse ?? focus
   const [sheetOpen, setSheetOpen] = useState(
-    () =>
-      verse != null ||
-      parseVerseQuery(search, hash).tab === 'robertson' ||
-      parseVerseQuery(search, hash).tab === 'scofield' ||
-      parseVerseQuery(search, hash).tab === 'henry' ||
-      parseVerseQuery(search, hash).tab === 'mine',
+    () => verse != null || isNoteTab(parseVerseQuery(search, hash).tab),
   )
   const [sheetFocus, setSheetFocus] = useState<SheetFocus>(() => {
     const tab = parseVerseQuery(search, hash).tab
-    if (tab === 'robertson') return 'robertson'
-    if (tab === 'scofield') return 'scofield'
-    if (tab === 'henry') return 'henry'
     if (tab === 'mine') return 'mine'
+    if (isNoteTab(tab)) return tab
     return null
   })
   const [highlightKey, setHighlightKey] = useState<string | null>(null)
@@ -145,18 +138,10 @@ export function VersePage({
   }, [bookSlug, chapter, closeWord])
 
   useEffect(() => {
-    if (
-      verse != null ||
-      query.tab === 'robertson' ||
-      query.tab === 'scofield' ||
-      query.tab === 'henry' ||
-      query.tab === 'mine'
-    ) {
+    if (verse != null || isNoteTab(query.tab)) {
       setSheetOpen(true)
-      if (query.tab === 'robertson') setSheetFocus('robertson')
-      else if (query.tab === 'scofield') setSheetFocus('scofield')
-      else if (query.tab === 'henry') setSheetFocus('henry')
-      else if (query.tab === 'mine' && user) setSheetFocus('mine')
+      if (query.tab === 'mine') setSheetFocus(user ? 'mine' : null)
+      else if (isNoteTab(query.tab)) setSheetFocus(query.tab)
     } else {
       setSheetOpen(false)
     }
@@ -248,13 +233,7 @@ export function VersePage({
     setSheetOpen(false)
     setSheetFocus(null)
     setHighlightKey(null)
-    if (
-      verse != null ||
-      query.tab === 'robertson' ||
-      query.tab === 'scofield' ||
-      query.tab === 'henry' ||
-      query.tab === 'mine'
-    ) {
+    if (verse != null || isNoteTab(query.tab)) {
       navigate(`/bible/${bookSlug}/${chapter}`)
     }
   }

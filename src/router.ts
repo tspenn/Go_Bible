@@ -21,6 +21,13 @@ export function parseVerseQuery(search = '', hash = '') {
   }
 }
 
+const NOTE_TABS = ['scofield', 'henry', 'tsk', 'dictionary', 'topics', 'robertson', 'mine'] as const
+export type NoteTab = (typeof NOTE_TABS)[number]
+
+export function isNoteTab(tab?: string): tab is NoteTab {
+  return !!tab && (NOTE_TABS as readonly string[]).includes(tab)
+}
+
 export function parsePath(pathname: string): Route {
   const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean)
 

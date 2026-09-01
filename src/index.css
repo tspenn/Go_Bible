@@ -6,6 +6,7 @@
   --gold: #c9a66b;
   --serif: 'Cormorant Garamond', Georgia, serif;
   --sans: 'Source Sans 3', system-ui, sans-serif;
+  --dock-h: 3.85rem;
 }
 
 * { box-sizing: border-box; }
@@ -23,7 +24,7 @@ body {
 a { color: var(--blue-deep); text-decoration: none; }
 a:hover { color: var(--gold); }
 
-.app { min-height: 100vh; display: flex; flex-direction: column; }
+.app { min-height: 100vh; display: flex; flex-direction: column; padding-bottom: var(--dock-h); }
 
 .masthead {
   background: var(--blue);
@@ -37,12 +38,6 @@ a:hover { color: var(--gold); }
 }
 
 .masthead a { color: var(--cream); }
-.masthead a.shop {
-  font-size: 0.85rem;
-  opacity: 0.88;
-  border-bottom: 1px solid var(--gold);
-  margin-left: 0.25rem;
-}
 
 .mast-nav {
   display: flex;
@@ -104,7 +99,7 @@ button.text-link {
 
 nav { display: flex; gap: 1.25rem; font-size: 0.95rem; }
 
-main { flex: 1; padding: 2.5rem 1.5rem 4rem; }
+main { flex: 1; padding: 2.5rem 1.5rem 3rem; }
 
 .page { max-width: 42rem; margin: 0 auto; }
 .page.reading { max-width: 46rem; }
@@ -129,14 +124,6 @@ h1 { font-size: 2.6rem; font-style: italic; line-height: 1.15; margin: 0 0 0.75r
 h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 
 .lead { font-size: 1.2rem; margin-top: 0; }
-
-.themes-link {
-  margin: 0 0 1.75rem;
-  font-size: 0.95rem;
-}
-.themes-link a {
-  border-bottom: 1px solid var(--gold);
-}
 
 .book-picker { margin: 0 0 1.75rem; }
 .start-reads {
@@ -224,6 +211,34 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   flex-direction: column;
 }
 .topic-list li span { font-size: 0.95rem; opacity: 0.8; }
+.hit-title {
+  color: var(--blue-deep);
+  font-weight: 600;
+}
+.starter-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+.starter-list li {
+  padding: 0.95rem 0;
+  border-bottom: 1px solid #e6e0d6;
+}
+.starter-title {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1.45rem;
+  font-style: italic;
+  color: var(--blue-deep);
+  line-height: 1.25;
+}
+.starter-links {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+}
+.starter-links a {
+  border-bottom: 1px solid var(--gold);
+}
 .book-index li { gap: 0.4rem; }
 .chapter-index {
   display: flex;
@@ -666,7 +681,7 @@ a.ribbon-btn {
     z-index: 15;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--dock-h);
     max-height: 58vh;
     overflow: auto;
     margin: 0;
@@ -700,3 +715,32 @@ footer {
 }
 footer p { margin: 0.25rem 0; }
 footer .fine { opacity: 0.85; font-size: 0.8rem; }
+
+.dock {
+  position: fixed;
+  z-index: 16;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--dock-h);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  background: var(--blue);
+  border-top: 1px solid rgba(247, 245, 242, 0.28);
+  padding: 0 0.2rem env(safe-area-inset-bottom, 0);
+}
+.dock a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--cream);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  padding: 0.35rem 0.25rem;
+}
+.dock a.on,
+.dock a[aria-current='page'] {
+  color: var(--gold);
+}

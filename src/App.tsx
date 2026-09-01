@@ -3,6 +3,7 @@ import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
 import { AuthProvider, useAuth } from './lib/auth'
+import { MAGAZINE_URL, STORE_URL } from './data/starters'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
@@ -43,16 +44,19 @@ export function Link({
   children,
   className,
   onClick,
+  'aria-current': ariaCurrent,
 }: {
   to: string
   children: React.ReactNode
   className?: string
   onClick?: () => void
+  'aria-current'?: 'page' | undefined
 }) {
   return (
     <a
       href={to}
       className={className}
+      aria-current={ariaCurrent}
       onClick={(e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
         e.preventDefault()
@@ -85,8 +89,8 @@ function HeaderSearch() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="Search topics or John 3:16"
-        aria-label="Search topics or John 3:16"
+        placeholder="John 3:16 or a topic"
+        aria-label="Search a verse or topic"
         enterKeyHint="search"
       />
       <button type="submit" className="sr-only">
@@ -159,6 +163,33 @@ function MastNav() {
   )
 }
 
+function bibleOn(name: Route['name']) {
+  return name === 'bible' || name === 'chapter' || name === 'verse'
+}
+
+function topicsOn(name: Route['name']) {
+  return name === 'topics' || name === 'topic'
+}
+
+function Dock({ routeName }: { routeName: Route['name'] }) {
+  return (
+    <nav className="dock" aria-label="Main">
+      <Link to="/bible" className={bibleOn(routeName) ? 'on' : undefined} aria-current={bibleOn(routeName) ? 'page' : undefined}>
+        Bible
+      </Link>
+      <Link to="/topics" className={topicsOn(routeName) ? 'on' : undefined} aria-current={topicsOn(routeName) ? 'page' : undefined}>
+        Topics
+      </Link>
+      <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer">
+        Walking by Faith
+      </a>
+      <a href={STORE_URL} target="_blank" rel="noopener noreferrer">
+        Store
+      </a>
+    </nav>
+  )
+}
+
 function AppShell() {
   const loc = useLocation()
   const route = parsePath(loc.pathname)
@@ -175,9 +206,6 @@ function AppShell() {
         </Link>
         <HeaderSearch />
         <MastNav />
-        <a href="https://faith.skylandpublishing.com/catalog" className="shop">
-          Shop
-        </a>
       </header>
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />
@@ -190,6 +218,7 @@ function AppShell() {
         </p>
         <p className="fine">© 2026 Skyland Publishing – Skyland Reach LLC</p>
       </footer>
+      <Dock routeName={route.name} />
     </div>
   )
 }

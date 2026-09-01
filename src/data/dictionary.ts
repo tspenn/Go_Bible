@@ -83,6 +83,33 @@ export function findDict(slug: string) {
   return DICTIONARY.find((d) => d.slug === slug)
 }
 
+export function searchDictionary(q: string, limit = 15): DictEntry[] {
+  const n = q.trim().toLowerCase()
+  if (n.length < 2) return []
+  const slugQ = n.replace(/\s+/g, '-')
+  const nameHits: DictEntry[] = []
+  const seen = new Set<string>()
+  for (const d of DICTIONARY) {
+    const nameHit =
+      d.name.toLowerCase().includes(n) ||
+      d.slug.includes(slugQ) ||
+      d.aliases.some((a) => a.toLowerCase().includes(n))
+    if (!nameHit) continue
+    nameHits.push(d)
+    seen.add(d.slug)
+    if (nameHits.length >= limit) return nameHits
+  }
+  if (n.length < 4) return nameHits
+  const bodyHits: DictEntry[] = []
+  for (const d of DICTIONARY) {
+    if (seen.has(d.slug)) continue
+    if (!d.body.toLowerCase().includes(n)) continue
+    bodyHits.push(d)
+    if (nameHits.length + bodyHits.length >= limit) break
+  }
+  return [...nameHits, ...bodyHits]
+}
+
 export function dictForWord(word: string, linked?: DictEntry[]) {
   const pool = linked && linked.length ? linked : DICTIONARY
   const peeled = peelPossessive(word)

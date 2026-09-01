@@ -212,7 +212,7 @@ function seedList(): HenryNote[] {
   return out
 }
 
-const SEED_NOTES = seedList()
+export const SEED_NOTES = seedList()
 
 type Payload = { source: string; notes: HenryNote[] }
 
