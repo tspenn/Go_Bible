@@ -202,9 +202,11 @@ export function MarkMenu({
             <button type="button" className="mark-action" onClick={() => askMark('note')}>
               Note
             </button>
-            <button type="button" className="mark-action" onClick={() => setScreen('commentary')}>
-              See Commentary
-            </button>
+            {henry.length > 0 && (
+              <button type="button" className="mark-action" onClick={() => setScreen('commentary')}>
+                See Commentary
+              </button>
+            )}
             <button type="button" className="mark-action" onClick={() => void onCopy()}>
               {copied ? 'Copied' : 'Copy'}
             </button>
@@ -287,7 +289,6 @@ export function MarkMenu({
       {screen === 'commentary' && (
         <>
           <p className="strongs-num">{HENRY_SOURCE}</p>
-          {henry.length === 0 && <p>No Matthew Henry Exposition on this verse.</p>}
           {henry.map((n, ni) => (
             <div key={`${n.chapter}-${n.verse}-${n.range ?? ni}`}>
               <p className="strongs-word">

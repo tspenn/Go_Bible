@@ -22,11 +22,7 @@ import {
   tskPreview,
   type TskGroup,
 } from '../data/tsk'
-import {
-  isRobertsonBook,
-  ROBERTSON_SOURCE,
-  type RobertsonNote,
-} from '../data/robertson'
+import { ROBERTSON_SOURCE, type RobertsonNote } from '../data/robertson'
 import {
   formatScofieldRef,
   SCOFIELD_SOURCE,
@@ -75,8 +71,6 @@ export function NotesSheet({
   mineFocusId?: string | null
 }) {
   const marks = useMarks()
-  const rwpBook = isRobertsonBook(bookSlug)
-  const showRwp = robertson.length > 0 || focus === 'robertson'
   const bookmarked = isBookmarked(bookSlug, chapter, verse)
 
   return (
@@ -107,7 +101,7 @@ export function NotesSheet({
         </div>
       </div>
 
-      {signedIn && (
+      {signedIn && (mineNotes.length > 0 || focus === 'mine') && (
         <section id="sheet-mine" className={focus === 'mine' ? 'note-on' : undefined}>
           <p className="source-line">My note</p>
           {mineNotes.length === 0 && (
@@ -136,9 +130,9 @@ export function NotesSheet({
         </section>
       )}
 
+      {scofield.length > 0 && (
       <section id="sheet-scofield" className={focus === 'scofield' ? 'note-on' : undefined}>
         <p className="source-line">{SCOFIELD_SOURCE}</p>
-        {scofield.length === 0 && <p>No 1917 Scofield note on this verse.</p>}
         {scofield.map((n) => (
           <div key={n.key} id={`note-${n.key}`} className={highlightKey === n.key ? 'note-on' : undefined}>
             <h3>
@@ -180,10 +174,11 @@ export function NotesSheet({
           </div>
         ))}
       </section>
+      )}
 
+      {henry.length > 0 && (
       <section id="sheet-henry" className={focus === 'henry' ? 'note-on' : undefined}>
         <p className="source-line">{HENRY_SOURCE}</p>
-        {henry.length === 0 && <p>No Matthew Henry note on this verse.</p>}
         {henry.map((n, ni) => (
           <div key={`${n.chapter}-${n.verse}-${n.range ?? ni}`}>
             <h3>
@@ -226,6 +221,7 @@ export function NotesSheet({
           </div>
         ))}
       </section>
+      )}
 
       <TskSeeAlso key={`${bookSlug}-${chapter}-${verse}`} groups={tsk} focus={focus} />
 
@@ -242,28 +238,23 @@ export function NotesSheet({
         </section>
       )}
 
+      {topics.length > 0 && (
       <section id="sheet-topics" className={focus === 'topics' ? 'note-on' : undefined}>
         <p className="source-line">Nave’s Topical Bible, Orville J. Nave, 1896 (public domain).</p>
-        {topics.length === 0 && <p>No Nave’s topic linked to this verse yet.</p>}
-        {topics.length > 0 && (
-          <ul className="refs">
-            {topics.map((t) => (
-              <li key={t.slug}>
-                <Link to={`/topics/${t.slug}`}>{t.name}</Link>
-                {t.summary ? <span> — {t.summary}</span> : t.hitLabel ? <span> — {t.hitLabel}</span> : null}
-              </li>
-            ))}
-          </ul>
-        )}
+        <ul className="refs">
+          {topics.map((t) => (
+            <li key={t.slug}>
+              <Link to={`/topics/${t.slug}`}>{t.name}</Link>
+              {t.summary ? <span> — {t.summary}</span> : t.hitLabel ? <span> — {t.hitLabel}</span> : null}
+            </li>
+          ))}
+        </ul>
       </section>
+      )}
 
-      {showRwp && (
+      {robertson.length > 0 && (
         <section id="sheet-robertson" className={focus === 'robertson' ? 'note-on' : undefined}>
           <p className="source-line">{ROBERTSON_SOURCE}</p>
-          {!rwpBook && (
-            <p>Robertson on this book will be added when those volumes are public domain.</p>
-          )}
-          {rwpBook && robertson.length === 0 && <p>No Robertson note on this verse in the seed set.</p>}
           {robertson.map((n) => (
             <div
               key={n.key}
@@ -288,11 +279,11 @@ function TskSeeAlso({ groups, focus }: { groups: TskGroup[]; focus: SheetFocus }
   const [more, setMore] = useState(false)
   const total = tskLinkCount(groups)
   const shown = tskPreview(groups, more)
+  if (total === 0) return null
 
   return (
     <section id="sheet-tsk" className={focus === 'tsk' ? 'note-on' : undefined}>
       <p className="source-line">{TSK_SOURCE}</p>
-      {total === 0 && <p>No Treasury of Scripture Knowledge references on this verse.</p>}
       {shown.map((g, gi) => (
         <div key={`${g.sortOrder}-${g.kjvPhrase}-${gi}`}>
           {tskHeading(g) ? <h3>{tskHeading(g)}</h3> : null}
