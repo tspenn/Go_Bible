@@ -205,7 +205,7 @@ function AppShell() {
     <div className="app">
       <header className="masthead">
         <Link to="/" className="brand">
-          <span className="brand-name">Go-Bible</span>
+          <span className="brand-name">Walking By Faith</span>
         </Link>
         <HeaderSearch />
         <MastNav />
