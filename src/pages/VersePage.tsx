@@ -12,9 +12,11 @@ import {
   type HenryNote,
 } from '../data/henry'
 import {
+  ensureRobertsonBook,
   noteByWord,
   notesForChapter as rwpForChapter,
   rwpKey,
+  useRobertson,
   type RobertsonNote,
 } from '../data/robertson'
 import { BookPicker } from '../components/BookPicker'
@@ -50,11 +52,13 @@ export function VersePage({
   useScofield()
   useHenry()
   useNaves()
+  const rwpVersion = useRobertson()
   useEffect(() => {
     void ensureTskBook(bookSlug)
     void ensureScofieldBook(bookSlug)
     void ensureHenryBook(bookSlug)
     void ensureNavesBook(bookSlug)
+    void ensureRobertsonBook(bookSlug)
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const paras = paragraphsInChapter(bookSlug, chapter)
@@ -84,7 +88,10 @@ export function VersePage({
     return map
   }, [marked])
 
-  const rwpChapter = useMemo(() => rwpForChapter(bookSlug, chapter), [bookSlug, chapter])
+  const rwpChapter = useMemo(
+    () => rwpForChapter(bookSlug, chapter),
+    [bookSlug, chapter, rwpVersion],
+  )
   const rwpMarked = useMemo(
     () =>
       rwpChapter.map((n, i) => ({

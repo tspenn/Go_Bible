@@ -36,7 +36,7 @@ export function AboutPage() {
         <li>{SCOFIELD_SOURCE}</li>
         <li>{HENRY_SOURCE}</li>
         <li>{TSK_SOURCE}</li>
-        <li>{ROBERTSON_SOURCE} Matthew, Mark, Luke, and Acts only.</li>
+        <li>{ROBERTSON_SOURCE} Complete Matthew, Mark, Luke, and Acts. John through Revelation wait until those volumes are public domain.</li>
         <li>Nave’s Topical Bible, Orville J. Nave, 1896 (public domain).</li>
       </ul>
 

@@ -6,9 +6,10 @@
  * (vols. 4–6, 1931–1933). Do not use later reprints’ extra notes or the
  * 100th-anniversary reset text.
  *
- * Short authentic extracts from the 1930 wording. Expand later from the
- * same 1930 volumes only.
+ * Seed notes in this file are kept as-is. Full 1930 notes are added from
+ * robertson-books/ without replacing seed wording.
  */
+import { useSyncExternalStore } from 'react'
 
 export type RobertsonNote = {
   bookSlug: string
@@ -180,14 +181,114 @@ export const ROBERTSON: RobertsonNote[] = [
   },
 ]
 
+type Payload = { source: string; notes: RobertsonNote[] }
+
+const bookLoaders = import.meta.glob('./robertson-books/*.json') as Record<
+  string,
+  () => Promise<{ default: Payload } | Payload>
+>
+
+const extraByVerse = new Map<string, RobertsonNote[]>()
+const loadedBooks = new Set<string>()
+const loading = new Map<string, Promise<void>>()
+const listeners = new Set<() => void>()
+let rwpVersion = 0
+
+function verseKey(bookSlug: string, chapter: number, verse: number) {
+  return `${bookSlug}:${chapter}:${verse}`
+}
+
+function fold(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function collidesWithSeed(note: RobertsonNote, seed: RobertsonNote[]) {
+  for (const s of seed) {
+    if (note.heading && s.heading && fold(note.heading) === fold(s.heading)) return true
+    const a = fold(note.body)
+    const b = fold(s.body)
+    if (a && b && (a.includes(b) || b.includes(a)) && Math.min(a.length, b.length) >= 40) return true
+  }
+  return false
+}
+
+function addNotes(notes: RobertsonNote[]) {
+  for (const n of notes) {
+    const key = verseKey(n.bookSlug, n.chapter, n.verse)
+    const list = extraByVerse.get(key) ?? []
+    list.push(n)
+    extraByVerse.set(key, list)
+  }
+  rwpVersion += 1
+  listeners.forEach((fn) => fn())
+}
+
+export function subscribeRobertson(fn: () => void) {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+
+export function robertsonStoreVersion() {
+  return rwpVersion
+}
+
+export async function ensureRobertsonBook(bookSlug: string) {
+  if (loadedBooks.has(bookSlug)) return
+  const path = `./robertson-books/${bookSlug}.json`
+  const loader = bookLoaders[path]
+  if (!loader) {
+    loadedBooks.add(bookSlug)
+    return
+  }
+  const pending = loading.get(bookSlug)
+  if (pending) return pending
+  const work = loader()
+    .then((mod) => {
+      const payload = (mod as { default?: Payload }).default ?? (mod as Payload)
+      addNotes(payload.notes ?? [])
+      loadedBooks.add(bookSlug)
+    })
+    .catch((err) => {
+      console.warn(`Robertson book ${bookSlug} failed to load`, err)
+    })
+    .finally(() => {
+      loading.delete(bookSlug)
+    })
+  loading.set(bookSlug, work)
+  return work
+}
+
+export function useRobertson() {
+  return useSyncExternalStore(subscribeRobertson, robertsonStoreVersion, () => 0)
+}
+
 export function notesForVerse(bookSlug: string, chapter: number, verse: number) {
-  return ROBERTSON.filter(
+  const seed = ROBERTSON.filter(
     (n) => n.bookSlug === bookSlug && n.chapter === chapter && n.verse === verse,
   )
+  const extra = (extraByVerse.get(verseKey(bookSlug, chapter, verse)) ?? []).filter(
+    (n) => !collidesWithSeed(n, seed),
+  )
+  const used = new Set(seed.map((n) => n.word?.toLowerCase()).filter(Boolean) as string[])
+  const extras = extra.map((n) => {
+    const key = n.word?.toLowerCase()
+    if (key && used.has(key)) return { ...n, word: undefined }
+    if (key) used.add(key)
+    return n
+  })
+  return [...seed, ...extras]
 }
 
 export function notesForChapter(bookSlug: string, chapter: number) {
-  return ROBERTSON.filter((n) => n.bookSlug === bookSlug && n.chapter === chapter)
+  const verses = new Set<number>()
+  for (const n of ROBERTSON) {
+    if (n.bookSlug === bookSlug && n.chapter === chapter) verses.add(n.verse)
+  }
+  const prefix = `${bookSlug}:${chapter}:`
+  for (const key of extraByVerse.keys()) {
+    if (key.startsWith(prefix)) verses.add(Number(key.slice(prefix.length)))
+  }
+  return [...verses].sort((a, b) => a - b).flatMap((v) => notesForVerse(bookSlug, chapter, v))
 }
 
 export function noteByWord(bookSlug: string, chapter: number, word: string) {
