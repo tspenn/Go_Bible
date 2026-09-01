@@ -13,6 +13,9 @@ export function SettingsPage() {
         A Bible you can read. Reference notes are public. Your highlights, bookmarks, and notes stay
         with your account on this device until you sign out.
       </p>
+      <p>
+        <Link to="/about">About the text, copyright, and sources</Link>
+      </p>
 
       <h2>Find a chapter</h2>
       <ol className="how-to">
@@ -29,6 +32,7 @@ export function SettingsPage() {
       <h2>Notes in the text</h2>
       <ul className="how-to">
         <li>Tap a verse number to open Scofield, Henry, See also (Treasury of Scripture Knowledge), dictionary, topics, and (in Matthew–Acts) Robertson.</li>
+        <li>Select two or more words in the chapter, then right-click (on a phone, press the selection). Choose Highlight, Share, Note, See Commentary, or Copy. The words stay marked while the menu is open. Share uses your device share sheet. Highlight opens the pen colors. See Commentary opens Matthew Henry from those words, not a download panel.</li>
         <li>Gold italic letters a, b, c are 1917 Scofield notes. Tap the letter or the marked phrase.</li>
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
         <li>See also lists original TSK cross-references in green. Hover or press a link for “Go to …” then tap to open that verse. The first six links show; tap More references for the rest.</li>
@@ -38,8 +42,8 @@ export function SettingsPage() {
 
       <h2>Your marks</h2>
       <ul className="how-to">
-        <li>Sign in to create or see personal marks. Signed out, the Bible and reference panel still work.</li>
-        <li>Press and hold a word or phrase, then choose Highlight, Bookmark, or Add my note.</li>
+        <li>Sign in to create or see personal marks. Signed out, the Bible still reads, and you can still Copy, Share, and See Commentary from a selection.</li>
+        <li>Select two or more words, then choose Highlight or Note. Bookmark stays on the verse number notes if you want a ribbon.</li>
         <li>A highlight is a wash behind those words. You may name pens below. Colors have no set meaning.</li>
         <li>A bookmark is a ribbon on the verse, not a color. You can also bookmark from the notes panel.</li>
         <li>Your notes show a ★ (or 1, 2, 3 if you have more than one on that verse). They are not Scofield letters.</li>

@@ -71,7 +71,9 @@ export function NotebookPage() {
       </ul>
 
       <h2>Highlights by pen</h2>
-      {marks.highlights.length === 0 && <p>No highlights yet. Press and hold a phrase, then tap Highlight.</p>}
+      {marks.highlights.length === 0 && (
+        <p>No highlights yet. Select two or more words, then choose Highlight.</p>
+      )}
       {['yellow', 'gold', 'orange', 'pink', 'rose', 'sage', 'teal', 'dusty-blue', 'lavender', 'gray'].map(
         (id) => {
           const rows = marks.highlights.filter((h) => h.color === id)

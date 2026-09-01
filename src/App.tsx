@@ -3,7 +3,7 @@ import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
 import { AuthProvider, useAuth } from './lib/auth'
-import { MAGAZINE_URL, STORE_URL } from './data/starters'
+import { MAGAZINE_URL, STORE_URL, TAGLINE } from './data/starters'
 import { HomePage } from './pages/HomePage'
 import { TopicsPage } from './pages/TopicsPage'
 import { TopicPage } from './pages/TopicPage'
@@ -12,6 +12,7 @@ import { BookPage } from './pages/BookPage'
 import { VersePage } from './pages/VersePage'
 import { NotebookPage } from './pages/NotebookPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { AboutPage } from './pages/AboutPage'
 import { LoginPage } from './pages/LoginPage'
 
 function useLocation() {
@@ -153,6 +154,8 @@ function Screen({
       return <NotebookPage />
     case 'settings':
       return <SettingsPage />
+    case 'about':
+      return <AboutPage />
     case 'login':
       return <LoginPage search={search} />
   }
@@ -163,6 +166,7 @@ function MastNav() {
   return (
     <nav className="mast-nav" aria-label="Account">
       <Link to="/settings">Settings</Link>
+      <Link to="/about">About</Link>
       {user ? <Link to="/notebook">Notebook</Link> : null}
       {user ? (
         <button type="button" className="mast-auth" onClick={() => void signOut().then(() => navigate('/'))}>
@@ -215,6 +219,7 @@ function AppShell() {
       <header className="masthead">
         <Link to="/" className="brand">
           <span className="brand-name">Walking By Faith</span>
+          <span className="brand-tag">{TAGLINE}</span>
         </Link>
         <HeaderSearch />
         <MastNav />
@@ -225,8 +230,9 @@ function AppShell() {
       <footer>
         <p>A companion to Walking By Faith · Skyland Publishing – Skyland Reach LLC</p>
         <p className="fine">
-          Nave’s Topical Bible, 1896, is public domain. Go-Bible text, based on the World
-          English Bible (public domain). Divine name rendered LORD.
+          <Link to="/about">About</Link>
+          {' · '}
+          <Link to="/settings">How to use</Link>
         </p>
         <p className="fine">© 2026 Skyland Publishing – Skyland Reach LLC</p>
       </footer>

@@ -1,4 +1,5 @@
 import web from './web.json' with { type: 'json' }
+import paraData from './web-paras.json' with { type: 'json' }
 
 export type Verse = {
   book: string
@@ -161,6 +162,26 @@ export function versesInChapter(bookSlug: string, chapter: number) {
     })
   }
   return out
+}
+
+const paraBySlug = (paraData as { books: Record<string, number[][]> }).books
+
+export function paragraphsInChapter(bookSlug: string, chapter: number) {
+  const verses = versesInChapter(bookSlug, chapter)
+  if (!verses.length) return []
+  const starts = new Set(paraBySlug[bookSlug]?.[chapter - 1] ?? [])
+  starts.add(verses[0].verse)
+  const groups: Verse[][] = []
+  let cur: Verse[] = []
+  for (const v of verses) {
+    if (cur.length > 0 && starts.has(v.verse)) {
+      groups.push(cur)
+      cur = []
+    }
+    cur.push(v)
+  }
+  if (cur.length) groups.push(cur)
+  return groups
 }
 
 export function parseRef(input: string) {

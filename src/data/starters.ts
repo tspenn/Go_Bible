@@ -1,5 +1,6 @@
 export const MAGAZINE_URL = 'https://faith.skylandpublishing.com'
 export const STORE_URL = 'https://faith.skylandpublishing.com/catalog'
+export const TAGLINE = 'A Bible tool made for reading.'
 
 export type StarterTopic = {
   id: string

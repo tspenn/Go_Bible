@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { Link, navigate } from '../App'
-import { findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
+import { findVerse, paragraphsInChapter, versesInChapter } from '../data/kjv'
 import { ensureNavesBook, topicsForVerse, useNaves } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
@@ -9,6 +9,7 @@ import {
   ensureHenryBook,
   henryNotesForVerse,
   useHenry,
+  type HenryNote,
 } from '../data/henry'
 import {
   noteByWord,
@@ -25,6 +26,7 @@ import { tskForVerse, ensureTskBook, useTsk } from '../data/tsk'
 import { useAuth } from '../lib/auth'
 import { parseVerseQuery, isNoteTab } from '../router'
 import { recordLastRead } from '../data/last-read'
+import { readChapterSelection, type LiveWash } from '../lib/textSelect'
 
 export function VersePage({
   bookSlug,
@@ -52,6 +54,7 @@ export function VersePage({
     void ensureNavesBook(bookSlug)
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
+  const paras = paragraphsInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
   useEffect(() => {
     if (!list.length) return
@@ -114,7 +117,70 @@ export function VersePage({
   const [wordPopup, setWordPopup] = useState<WordPopup | null>(null)
   const [markRequest, setMarkRequest] = useState<MarkRequest | null>(null)
   const [signInAsk, setSignInAsk] = useState<{ x: number; y: number } | null>(null)
+  const [liveWashes, setLiveWashes] = useState<LiveWash[]>([])
+  const chapterEl = useRef<HTMLDivElement>(null)
+  const lastPointer = useRef<'mouse' | 'touch'>('mouse')
+  const selectOpen = useRef(false)
   const closeWord = useCallback(() => setWordPopup(null), [])
+
+  const openSelect = useCallback(
+    (pick: ReturnType<typeof readChapterSelection>) => {
+      if (!pick) return
+      selectOpen.current = true
+      closeWord()
+      setSignInAsk(null)
+      setLiveWashes(pick.washes)
+      setMarkRequest({
+        bookSlug,
+        bookName,
+        chapter,
+        verse: pick.verses[0] ?? 1,
+        verses: pick.verses,
+        phrase: pick.phrase,
+        washes: pick.washes,
+        x: pick.x,
+        y: pick.y,
+      })
+    },
+    [bookSlug, bookName, chapter, closeWord],
+  )
+
+  const closeSelect = useCallback(() => {
+    selectOpen.current = false
+    setMarkRequest(null)
+    setLiveWashes([])
+  }, [])
+
+  useEffect(() => {
+    let t = 0
+    function onSel() {
+      if (lastPointer.current === 'mouse') return
+      if (selectOpen.current) return
+      window.clearTimeout(t)
+      t = window.setTimeout(() => {
+        const root = chapterEl.current
+        if (!root || selectOpen.current) return
+        openSelect(readChapterSelection(root))
+      }, 450)
+    }
+    document.addEventListener('selectionchange', onSel)
+    return () => {
+      window.clearTimeout(t)
+      document.removeEventListener('selectionchange', onSel)
+    }
+  }, [openSelect])
+
+  function onChapterPointerDown(e: PointerEvent<HTMLDivElement>) {
+    lastPointer.current = e.pointerType === 'mouse' ? 'mouse' : 'touch'
+  }
+
+  function onChapterContextMenu(e: MouseEvent<HTMLDivElement>) {
+    const target = e.target as HTMLElement
+    if (target.closest('.vn, .callout, .mine-mark, .strongs-card, .mark-menu')) return
+    const pick = readChapterSelection(e.currentTarget, { x: e.clientX, y: e.clientY })
+    e.preventDefault()
+    if (pick) openSelect(pick)
+  }
 
   useEffect(() => {
     if (!sheetOpen || !sheetFocus) return
@@ -140,7 +206,8 @@ export function VersePage({
 
   useEffect(() => {
     closeWord()
-  }, [bookSlug, chapter, closeWord])
+    closeSelect()
+  }, [bookSlug, chapter, closeWord, closeSelect])
 
   useEffect(() => {
     if (verse != null || isNoteTab(query.tab)) {
@@ -264,16 +331,20 @@ export function VersePage({
           .sort((a, b) => a.createdAt - b.createdAt)
       : []
 
-  function onMark(verseNum: number, phrase: string, x: number, y: number) {
-    closeWord()
-    if (!user) {
-      setMarkRequest(null)
-      setSignInAsk({ x, y })
-      return
+  const selectHenry = useMemo(() => {
+    if (!markRequest) return []
+    const seen = new Set<string>()
+    const out: HenryNote[] = []
+    for (const v of markRequest.verses) {
+      for (const n of henryNotesForVerse(bookSlug, chapter, v)) {
+        const id = `${n.range ?? n.verse}:${n.body.slice(0, 40)}`
+        if (seen.has(id)) continue
+        seen.add(id)
+        out.push(n)
+      }
     }
-    setSignInAsk(null)
-    setMarkRequest({ bookSlug, chapter, verse: verseNum, phrase, x, y })
-  }
+    return out
+  }, [markRequest, bookSlug, chapter])
 
   if (!list.length && !selected) {
     return (
@@ -299,11 +370,15 @@ export function VersePage({
           {bookName} {chapter}
         </h1>
 
-        <div className="chapter">
-          <p className="source-line">
-            {SOURCE_LINE} Verse numbers open notes. Gold letters are Scofield. Blue words in Matthew–Acts are Robertson.
-          </p>
-          {list.map((v) => {
+        <div
+          className="chapter"
+          ref={chapterEl}
+          onPointerDown={onChapterPointerDown}
+          onContextMenu={onChapterContextMenu}
+        >
+          {paras.map((group) => (
+            <p key={`p-${group[0]?.verse}`} className="para">
+              {group.map((v, vi) => {
             const marksOnVerse = byVerse.get(v.verse) ?? []
             const rwpNotes = rwpByVerse.get(v.verse) ?? []
             const onWord = rwpNotes.filter(
@@ -319,13 +394,21 @@ export function VersePage({
             const scoOnPhrase = marksOnVerse.filter((n) => n.webPhrase && phraseSpan(v.text, n.webPhrase))
             const scoVerseLevel = marksOnVerse.filter((n) => !n.webPhrase || !phraseSpan(v.text, n.webPhrase))
             const mineNotes = user ? notesForVerse(bookSlug, chapter, v.verse) : []
-            const washes = user ? washesForVerse(bookSlug, chapter, v.verse) : []
+            const savedWashes = user ? washesForVerse(bookSlug, chapter, v.verse) : []
+            const washes = [
+              ...liveWashes
+                .filter((w) => w.verse === v.verse)
+                .map((w) => ({ phrase: w.phrase, color: 'var(--select-live)' })),
+              ...savedWashes,
+            ]
             return (
-              <p
+              <span
                 key={v.verse}
                 id={`v${v.verse}`}
-                className={focus === v.verse && verse != null ? 'highlight' : undefined}
+                data-verse={v.verse}
+                className={`verse${focus === v.verse && verse != null ? ' highlight' : ''}`}
               >
+                {vi > 0 ? ' ' : null}
                 <Link
                   to={`/bible/${v.bookSlug}/${v.chapter}/${v.verse}`}
                   className="vn"
@@ -371,7 +454,6 @@ export function VersePage({
                     onOpen: () => openMine(n),
                     key: n.id,
                   }))}
-                  onMark={(phrase, x, y) => onMark(v.verse, phrase, x, y)}
                 />
                 {scoVerseLevel.map((n) => (
                   <button
@@ -395,9 +477,11 @@ export function VersePage({
                     {n.letter}
                   </button>
                 ))}
-              </p>
+              </span>
             )
-          })}
+              })}
+            </p>
+          ))}
         </div>
       </div>
 
@@ -414,12 +498,13 @@ export function VersePage({
       {markRequest && (
         <MarkMenu
           request={markRequest}
-          onClose={() => setMarkRequest(null)}
-          onSavedNote={(noteId) => {
-            const note = notesForVerse(markRequest.bookSlug, markRequest.chapter, markRequest.verse).find(
-              (n) => n.id === noteId,
-            )
-            if (note) openMine(note)
+          signedIn={Boolean(user)}
+          henry={selectHenry}
+          onClose={closeSelect}
+          onNeedSignIn={() => {
+            setSignInAsk({ x: markRequest.x, y: markRequest.y })
+            selectOpen.current = false
+            setMarkRequest(null)
           }}
         />
       )}
@@ -427,7 +512,10 @@ export function VersePage({
         <SignInPrompt
           x={signInAsk.x}
           y={signInAsk.y}
-          onClose={() => setSignInAsk(null)}
+          onClose={() => {
+            setSignInAsk(null)
+            setLiveWashes([])
+          }}
           next={`/bible/${bookSlug}/${chapter}${focus ? `/${focus}` : ''}`}
         />
       )}

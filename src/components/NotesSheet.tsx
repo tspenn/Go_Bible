@@ -111,7 +111,7 @@ export function NotesSheet({
         <section id="sheet-mine" className={focus === 'mine' ? 'note-on' : undefined}>
           <p className="source-line">My note</p>
           {mineNotes.length === 0 && (
-            <p>Press and hold a word or phrase in the verse to add your own note.</p>
+            <p>Select two or more words in the verse, then choose Note.</p>
           )}
           {mineNotes.map((n, i) => (
             <div
