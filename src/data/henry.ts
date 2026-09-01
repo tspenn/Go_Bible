@@ -1,14 +1,13 @@
 /**
  * Matthew Henry, Exposition of the Old and New Testament (complete commentary).
- * Public domain. OT volumes 1706–1710; NT completed from his papers after 1714.
+ * Public domain. OT volumes 1706–1710; NT completed from his papers after 1714 (through 1721).
  *
- * Store by bookSlug → chapter → verse. Henry often groups verses; `range` records
- * that grouping. Seed matches the Scofield verse set.
- *
- * Full load: parse CCEL complete Exposition (mhc1–mhc6 / ccel.org/ccel/henry/mhc)
- * into this store or src/data/henry.json, keyed by bookSlug/chapter/verse with `range`
- * for Henry’s verse groups. Never use MHCC “Concise” or later copyrighted abridgements.
+ * Seed notes in this file are kept as-is. Full Exposition groups are added from
+ * henry-books/ without replacing seed wording. Never MHCC Concise.
  */
+import { useSyncExternalStore } from 'react'
+import { findVerse } from './kjv'
+import { phraseSpan } from './scofield'
 
 export type HenryNote = {
   bookSlug: string
@@ -17,9 +16,12 @@ export type HenryNote = {
   /** Verse grouping in the complete commentary, when not a single verse. */
   range?: string
   body: string
+  /** Exact words in the displayed verse, only if they already sit in Henry’s comment. */
+  webPhrase?: string
 }
 
-export const HENRY_SOURCE = 'Matthew Henry, public domain'
+export const HENRY_SOURCE =
+  'Matthew Henry, Exposition of the Old and New Testament (1706–1721). Public domain.'
 
 type HenryStore = Record<string, Record<string, Record<string, HenryNote>>>
 
@@ -152,7 +154,47 @@ const HENRY: HenryStore = {
   },
 }
 
-function coversVerse(n: HenryNote, verse: number) {
+const SKIP = new Set([
+  'the',
+  'and',
+  'of',
+  'to',
+  'in',
+  'that',
+  'for',
+  'was',
+  'were',
+  'with',
+  'from',
+  'this',
+  'they',
+  'them',
+  'his',
+  'her',
+  'you',
+  'your',
+  'our',
+  'not',
+  'but',
+  'all',
+  'are',
+  'had',
+  'has',
+  'have',
+  'him',
+  'who',
+  'which',
+  'unto',
+  'shall',
+  'will',
+  'god',
+  'lord',
+  'jesus',
+  'christ',
+])
+
+export function coversVerse(n: HenryNote, verse: number) {
+  if (n.range === 'intro') return n.verse === verse
   if (n.verse === verse) return true
   if (!n.range) return false
   const m = n.range.match(/^(\d+)\s*[-–]\s*(\d+)$/)
@@ -160,16 +202,155 @@ function coversVerse(n: HenryNote, verse: number) {
   return verse >= Number(m[1]) && verse <= Number(m[2])
 }
 
+function seedList(): HenryNote[] {
+  const out: HenryNote[] = []
+  for (const book of Object.values(HENRY)) {
+    for (const ch of Object.values(book)) {
+      out.push(...Object.values(ch))
+    }
+  }
+  return out
+}
+
+const SEED_NOTES = seedList()
+
+type Payload = { source: string; notes: HenryNote[] }
+
+const bookLoaders = import.meta.glob('./henry-books/*.json') as Record<
+  string,
+  () => Promise<{ default: Payload } | Payload>
+>
+
+const extra = new Map<string, HenryNote[]>()
+const loadedBooks = new Set<string>()
+const loading = new Map<string, Promise<void>>()
+const listeners = new Set<() => void>()
+let version = 0
+
+function bookChapterKey(bookSlug: string, chapter: number) {
+  return `${bookSlug}:${chapter}`
+}
+
+function addNotes(notes: HenryNote[]) {
+  for (const n of notes) {
+    const key = bookChapterKey(n.bookSlug, n.chapter)
+    const list = extra.get(key) ?? []
+    list.push(n)
+    extra.set(key, list)
+  }
+  version += 1
+  listeners.forEach((fn) => fn())
+}
+
+export function subscribeHenry(fn: () => void) {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+
+export function henryStoreVersion() {
+  return version
+}
+
+export async function ensureHenryBook(bookSlug: string) {
+  if (loadedBooks.has(bookSlug)) return
+  const path = `./henry-books/${bookSlug}.json`
+  const loader = bookLoaders[path]
+  if (!loader) {
+    loadedBooks.add(bookSlug)
+    return
+  }
+  const pending = loading.get(bookSlug)
+  if (pending) return pending
+  const work = loader()
+    .then((mod) => {
+      const payload = (mod as { default?: Payload }).default ?? (mod as Payload)
+      addNotes(payload.notes ?? [])
+      loadedBooks.add(bookSlug)
+    })
+    .catch((err) => {
+      console.warn(`Henry book ${bookSlug} failed to load`, err)
+    })
+    .finally(() => {
+      loading.delete(bookSlug)
+    })
+  loading.set(bookSlug, work)
+  return work
+}
+
+export function useHenry() {
+  return useSyncExternalStore(subscribeHenry, henryStoreVersion, () => 0)
+}
+
+export function henryPhraseInVerse(text: string, body: string) {
+  if (!text || !body) return ''
+  const tokens: { start: number; end: number; t: string }[] = []
+  const re = /\p{L}[\p{L}’']*/gu
+  for (const m of text.matchAll(re)) {
+    if (m.index == null) continue
+    tokens.push({ t: m[0], start: m.index, end: m.index + m[0].length })
+  }
+  for (let n = Math.min(4, tokens.length); n >= 2; n--) {
+    for (let i = 0; i <= tokens.length - n; i++) {
+      const slice = tokens.slice(i, i + n)
+      if (slice.every((s) => SKIP.has(s.t.toLowerCase()))) continue
+      if (!slice.some((s) => s.t.length >= 5 && !SKIP.has(s.t.toLowerCase()))) continue
+      const phrase = text.slice(slice[0].start, slice[n - 1].end)
+      if (phrase.length < 7) continue
+      if (phraseSpan(body, phrase)) return phrase
+    }
+  }
+  return ''
+}
+
+export function henryNotesForVerse(bookSlug: string, chapter: number, verse: number) {
+  const seed = SEED_NOTES.filter(
+    (n) => n.bookSlug === bookSlug && n.chapter === chapter && coversVerse(n, verse),
+  )
+  const dump = (extra.get(bookChapterKey(bookSlug, chapter)) ?? []).filter((n) => coversVerse(n, verse))
+  const intros = dump.filter((n) => n.range === 'intro')
+  const groups = dump.filter((n) => n.range !== 'intro')
+  return [...intros, ...seed, ...groups]
+}
+
 export function henryForVerse(bookSlug: string, chapter: number, verse: number) {
-  const exact = HENRY[bookSlug]?.[String(chapter)]?.[String(verse)]
-  if (exact) return exact
-  const ch = HENRY[bookSlug]?.[String(chapter)]
-  if (!ch) return undefined
-  return Object.values(ch).find((n) => coversVerse(n, verse))
+  return henryNotesForVerse(bookSlug, chapter, verse)[0]
 }
 
 export function henryForChapter(bookSlug: string, chapter: number) {
-  const ch = HENRY[bookSlug]?.[String(chapter)]
-  if (!ch) return []
-  return Object.values(ch).sort((a, b) => a.verse - b.verse)
+  const verses = new Set<number>()
+  for (const n of henryNotesForVerse(bookSlug, chapter, 1)) {
+    if (n.chapter === chapter) verses.add(n.verse)
+  }
+  const dump = extra.get(bookChapterKey(bookSlug, chapter)) ?? []
+  for (const n of dump) verses.add(n.verse)
+  for (const n of SEED_NOTES) {
+    if (n.bookSlug === bookSlug && n.chapter === chapter) verses.add(n.verse)
+  }
+  const seen = new Set<string>()
+  const out: HenryNote[] = []
+  for (const v of [...verses].sort((a, b) => a - b)) {
+    for (const n of henryNotesForVerse(bookSlug, chapter, v)) {
+      const id = `${n.range ?? n.verse}:${n.verse}:${n.body.slice(0, 24)}`
+      if (seen.has(id)) continue
+      seen.add(id)
+      out.push(n)
+    }
+  }
+  return out
+}
+
+export function henryLinkPhrase(note: HenryNote, verseText: string) {
+  if (note.webPhrase && phraseSpan(verseText, note.webPhrase)) return note.webPhrase
+  return henryPhraseInVerse(verseText, note.body)
+}
+
+export function attachHenryPhrase(bookSlug: string, chapter: number, verse: number) {
+  const v = findVerse(bookSlug, chapter, verse)
+  if (!v) return ''
+  for (const n of henryNotesForVerse(bookSlug, chapter, verse)) {
+    if (n.range === 'intro') continue
+    const phrase = henryLinkPhrase(n, v.text)
+    if (phrase) return phrase
+  }
+  return ''
 }

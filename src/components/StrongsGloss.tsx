@@ -139,6 +139,13 @@ export type ScoMark = {
   key: string
 }
 
+export type HenryMark = {
+  phrase: string
+  title: string
+  onOpen: () => void
+  key: string
+}
+
 function WordBits({
   text,
   verse,
@@ -222,6 +229,7 @@ export function VerseWords({
   onOpen,
   rwpMarks,
   scoMarks,
+  henryMarks,
   washes,
   mineMarks,
   onMark,
@@ -232,12 +240,19 @@ export function VerseWords({
   onOpen: (popup: WordPopup) => void
   rwpMarks?: RwpMark[]
   scoMarks?: ScoMark[]
+  henryMarks?: HenryMark[]
   washes?: WashSpan[]
   mineMarks?: MineMark[]
   onMark?: (phrase: string, x: number, y: number) => void
 }) {
   const rwp = rwpMarks ?? []
   const mine = mineMarks ?? []
+  const henry = (henryMarks ?? [])
+    .map((mark) => {
+      const span = mark.phrase ? phraseSpan(text, mark.phrase) : null
+      return span ? { start: span.start, end: span.end, mark } : null
+    })
+    .filter((x): x is { start: number; end: number; mark: HenryMark } => x != null)
   const sco = (scoMarks ?? [])
     .map((mark) => {
       const span = mark.phrase ? phraseSpan(text, mark.phrase) : null
@@ -264,14 +279,20 @@ export function VerseWords({
     })
     .filter((x): x is { start: number; end: number; mark: MineMark } => x != null)
 
-  if (sco.length === 0 && names.length === 0 && washSpans.length === 0 && mineSpans.length === 0) {
+  if (
+    sco.length === 0 &&
+    names.length === 0 &&
+    henry.length === 0 &&
+    washSpans.length === 0 &&
+    mineSpans.length === 0
+  ) {
     return (
       <WordBits text={text} verse={verse} dict={dict} onOpen={onOpen} rwpMarks={rwp} onMark={onMark} />
     )
   }
 
   const cuts = new Set<number>([0, text.length])
-  for (const r of [...sco, ...names, ...rwpSpans, ...washSpans, ...mineSpans]) {
+  for (const r of [...sco, ...names, ...henry, ...rwpSpans, ...washSpans, ...mineSpans]) {
     cuts.add(r.start)
     cuts.add(r.end)
   }
@@ -285,6 +306,7 @@ export function VerseWords({
     const slice = text.slice(from, to)
     const scoHere = sco.find((r) => r.start <= from && r.end >= to)
     const dictHere = names.find((r) => r.start <= from && r.end >= to)
+    const henryHere = henry.find((r) => r.start <= from && r.end >= to)
     const washHere = washSpans.find((r) => r.start <= from && r.end >= to)
     const style = washHere ? { backgroundColor: washHere.color } : undefined
     const holdPhrase = scoHere?.mark.phrase ?? dictHere?.matched ?? slice.trim()
@@ -324,6 +346,20 @@ export function VerseWords({
               y,
             })
           }}
+        >
+          {slice}
+        </Pressable>,
+      )
+    } else if (henryHere) {
+      chunks.push(
+        <Pressable
+          key={`h${from}-${henryHere.mark.key}`}
+          as="button"
+          className="dict-hit"
+          title={henryHere.mark.title}
+          style={style}
+          onHold={hold}
+          onShort={henryHere.mark.onOpen ? () => henryHere.mark.onOpen() : undefined}
         >
           {slice}
         </Pressable>,

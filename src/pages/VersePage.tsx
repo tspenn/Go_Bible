@@ -4,7 +4,12 @@ import { findVerse, SOURCE_LINE, versesInChapter } from '../data/kjv'
 import { topicsForVerse } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
-import { henryForVerse } from '../data/henry'
+import {
+  attachHenryPhrase,
+  ensureHenryBook,
+  henryNotesForVerse,
+  useHenry,
+} from '../data/henry'
 import {
   noteByWord,
   notesForChapter as rwpForChapter,
@@ -37,9 +42,11 @@ export function VersePage({
   const marks = useMarks()
   useTsk()
   useScofield()
+  useHenry()
   useEffect(() => {
     void ensureTskBook(bookSlug)
     void ensureScofieldBook(bookSlug)
+    void ensureHenryBook(bookSlug)
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
@@ -216,6 +223,14 @@ export function VersePage({
     navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=scofield`)
   }
 
+  function openHenry(nextVerse: number) {
+    closeWord()
+    setSheetFocus('henry')
+    setHighlightKey(null)
+    setSheetOpen(true)
+    navigate(`/bible/${bookSlug}/${chapter}/${nextVerse}?tab=henry`)
+  }
+
   function openMine(note: UserNote) {
     closeWord()
     setMarkRequest(null)
@@ -251,7 +266,7 @@ export function VersePage({
   }
 
   const sheetNotes = sheetVerse != null ? (byVerse.get(sheetVerse) ?? []) : []
-  const sheetHenry = sheetVerse != null ? henryForVerse(bookSlug, chapter, sheetVerse) : undefined
+  const sheetHenry = sheetVerse != null ? henryNotesForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetDict = sheetVerse != null ? dictForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetTopics = sheetVerse != null ? topicsForVerse(bookSlug, chapter, sheetVerse) : []
   const sheetTsk = sheetVerse != null ? tskForVerse(bookSlug, chapter, sheetVerse) : []
@@ -311,6 +326,7 @@ export function VersePage({
             )
             const afterVerse = rwpNotes.filter((n) => !onWord.includes(n))
             const dict = dictForVerse(bookSlug, chapter, v.verse)
+            const henryPhrase = attachHenryPhrase(bookSlug, chapter, v.verse)
             const scoOnPhrase = marksOnVerse.filter((n) => n.webPhrase && phraseSpan(v.text, n.webPhrase))
             const scoVerseLevel = marksOnVerse.filter((n) => !n.webPhrase || !phraseSpan(v.text, n.webPhrase))
             const mineNotes = user ? notesForVerse(bookSlug, chapter, v.verse) : []
@@ -346,6 +362,18 @@ export function VersePage({
                     onOpen: () => openScofield(n),
                     key: n.key,
                   }))}
+                  henryMarks={
+                    henryPhrase
+                      ? [
+                          {
+                            phrase: henryPhrase,
+                            title: 'Matthew Henry',
+                            onOpen: () => openHenry(v.verse),
+                            key: `henry-${v.verse}`,
+                          },
+                        ]
+                      : []
+                  }
                   washes={washes}
                   mineMarks={mineNotes.map((n, i) => ({
                     phrase: n.phrase,

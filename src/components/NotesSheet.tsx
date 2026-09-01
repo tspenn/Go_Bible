@@ -61,7 +61,7 @@ export function NotesSheet({
   chapter: number
   verse: number
   scofield: (ScofieldNote & { key: string; letter: string })[]
-  henry: HenryNote | undefined
+  henry: HenryNote[]
   tsk: TskGroup[]
   dict: DictEntry[]
   topics: NaveTopic[]
@@ -183,43 +183,48 @@ export function NotesSheet({
 
       <section id="sheet-henry" className={focus === 'henry' ? 'note-on' : undefined}>
         <p className="source-line">{HENRY_SOURCE}</p>
-        {henry ? (
-          <>
+        {henry.length === 0 && <p>No Matthew Henry note on this verse.</p>}
+        {henry.map((n, ni) => (
+          <div key={`${n.chapter}-${n.verse}-${n.range ?? ni}`}>
             <h3>
-              {bookName} {henry.chapter}:{henry.verse}
-              {henry.range && henry.range !== String(henry.verse) ? ` (on ${henry.range})` : ''}
+              {bookName} {n.chapter}:{n.verse}
+              {n.range === 'intro'
+                ? ' (introduction)'
+                : n.range && n.range !== String(n.verse)
+                  ? ` (on ${n.range})`
+                  : ''}
             </h3>
-            <p>
-              {linkBodyBits(henry.body, henry.bookSlug, henry.chapter).map((bit, i) => {
-                if (bit.type === 'ref') {
-                  return (
-                    <Link key={i} to={bit.href}>
-                      {bit.text}
-                    </Link>
-                  )
-                }
-                if (bit.type === 'dict') {
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      className="dict-hit"
-                      onClick={(e) => {
-                        const box = e.currentTarget.getBoundingClientRect()
-                        onDictName?.(bit.entry, box.left, box.bottom)
-                      }}
-                    >
-                      {bit.text}
-                    </button>
-                  )
-                }
-                return <span key={i}>{bit.text}</span>
-              })}
-            </p>
-          </>
-        ) : (
-          <p>Henry coming</p>
-        )}
+            {n.body.split(/\n{2,}/).map((para, pi) => (
+              <p key={pi}>
+                {linkBodyBits(para, n.bookSlug, n.chapter).map((bit, i) => {
+                  if (bit.type === 'ref') {
+                    return (
+                      <Link key={i} to={bit.href}>
+                        {bit.text}
+                      </Link>
+                    )
+                  }
+                  if (bit.type === 'dict') {
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        className="dict-hit"
+                        onClick={(e) => {
+                          const box = e.currentTarget.getBoundingClientRect()
+                          onDictName?.(bit.entry, box.left, box.bottom)
+                        }}
+                      >
+                        {bit.text}
+                      </button>
+                    )
+                  }
+                  return <span key={i}>{bit.text}</span>
+                })}
+              </p>
+            ))}
+          </div>
+        ))}
       </section>
 
       <TskSeeAlso key={`${bookSlug}-${chapter}-${verse}`} groups={tsk} focus={focus} />
