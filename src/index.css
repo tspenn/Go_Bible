@@ -190,25 +190,49 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 .testament-books {
   list-style: none;
   margin: 0;
-  padding: 0.25rem 0 0.5rem;
+  padding: 0.15rem 0 0.65rem;
   border-top: 1px solid #d9d3c9;
-  max-height: 22rem;
-  overflow: auto;
 }
 .testament-books li {
-  display: flex;
-  align-items: center;
+  border-bottom: 1px solid #efeae2;
+}
+.testament-books li:last-child {
+  border-bottom: 0;
 }
 .testament-books a:not(.last-mark) {
-  flex: 1;
-  display: block;
-  padding: 0.45rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 1rem;
   color: var(--text);
 }
 .testament-books a:not(.last-mark):hover,
 .testament-books a:not(.last-mark)[aria-current='page'] {
   background: #efe6d2;
   color: var(--blue-deep);
+}
+.testament-book-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.testament-book-name {
+  font-weight: 500;
+  color: var(--blue-deep);
+}
+.testament-book-head .last-mark {
+  width: auto;
+}
+.testament-book-syn {
+  font-size: 0.95rem;
+  color: #5c564c;
+  line-height: 1.4;
+}
+.testament-source {
+  margin: 0;
+  padding: 0.35rem 1rem 0.75rem;
+  font-size: 0.85rem;
+  color: #5c564c;
 }
 .last-mark {
   display: inline-flex;
@@ -294,6 +318,16 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 .listen-voice {
   font-size: 0.8rem;
   color: #5c564c;
+}
+.listen-gender {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.listen-btn.on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--cream);
 }
 .verse.speaking {
   background: color-mix(in srgb, var(--blue) 22%, transparent);

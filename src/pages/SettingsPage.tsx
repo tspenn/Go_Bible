@@ -1,10 +1,12 @@
 import { Link } from '../App'
 import { PEN_COLORS, penLabel, setPenName, useMarks } from '../data/marks'
 import { useAuth } from '../lib/auth'
+import { setListenGender, useListenGender } from '../lib/speak'
 
 export function SettingsPage() {
   const { user } = useAuth()
   const marks = useMarks()
+  const listenGender = useListenGender()
 
   return (
     <article className="page">
@@ -38,7 +40,7 @@ export function SettingsPage() {
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
         <li>See also lists original TSK cross-references in green. Hover or press a link for “Go to …” then tap to open that verse. The first six links show; tap More references for the rest.</li>
         <li>Blue dotted names are Easton or Smith dictionary entries.</li>
-        <li>Listen to this chapter reads the Go-Bible text aloud. It uses a United States English voice, not a British one. Pause, Resume, and Stop sit beside the chapter title. The verse being read is washed in light blue.</li>
+        <li>Listen to this chapter reads the Go-Bible text aloud. It uses a United States English voice, not a British one. Male is the default; you can switch to female below. Pause, Resume, and Stop sit beside the chapter title. The verse being read is washed in light blue.</li>
       </ul>
 
       <h2>Your marks</h2>
@@ -58,6 +60,27 @@ export function SettingsPage() {
         ) : (
           <Link to="/login?next=/notebook">Sign in to open your notebook</Link>
         )}
+      </p>
+
+      <h2>Listen voice</h2>
+      <p>United States English. This device remembers your choice.</p>
+      <p className="listen-gender">
+        <button
+          type="button"
+          className={`listen-btn${listenGender === 'male' ? ' on' : ''}`}
+          aria-pressed={listenGender === 'male'}
+          onClick={() => setListenGender('male')}
+        >
+          Male
+        </button>
+        <button
+          type="button"
+          className={`listen-btn${listenGender === 'female' ? ' on' : ''}`}
+          aria-pressed={listenGender === 'female'}
+          onClick={() => setListenGender('female')}
+        >
+          Female
+        </button>
       </p>
 
       <h2>Pens</h2>

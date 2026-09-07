@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import type { Verse } from '../data/kjv'
 
 export type SpeakStatus = 'idle' | 'playing' | 'paused'
+export type ListenGender = 'male' | 'female'
 
 export type SpeakState = {
   status: SpeakStatus
@@ -54,29 +55,114 @@ function isUs(voice: SpeechSynthesisVoice) {
   )
 }
 
-const PREFERRED = [
-  'google us english',
-  'microsoft david',
-  'microsoft mark',
-  'microsoft zira',
-  'microsoft aria',
-  'microsoft guy',
-  'microsoft andrew',
-  'microsoft jenny',
-  'samantha',
+const MALE_HINTS = [
+  'david',
+  'mark',
+  'guy',
+  'andrew',
+  'christopher',
+  'eric',
+  'steffan',
+  'james',
+  'john',
+  'tom',
   'alex',
+  'fred',
+  'ryan',
+  'roger',
+  'george',
+  'richard',
+  'male',
+]
+const FEMALE_HINTS = [
+  'zira',
+  'aria',
+  'jenny',
+  'samantha',
+  'susan',
+  'michelle',
+  'jane',
+  'eva',
+  'sara',
+  'linda',
+  'hazel',
+  'heather',
+  'catherine',
+  'karen',
+  'moira',
+  'fiona',
+  'victoria',
+  'female',
 ]
 
-function pickUsVoice(voices: SpeechSynthesisVoice[]) {
+const GENDER_KEY = 'go-bible-listen-gender'
+const genderListeners = new Set<() => void>()
+
+function readGender(): ListenGender {
+  try {
+    return localStorage.getItem(GENDER_KEY) === 'female' ? 'female' : 'male'
+  } catch {
+    return 'male'
+  }
+}
+
+let listenGender: ListenGender = typeof localStorage !== 'undefined' ? readGender() : 'male'
+
+function emitGender() {
+  genderListeners.forEach((fn) => fn())
+}
+
+export function getListenGender() {
+  return listenGender
+}
+
+export function setListenGender(next: ListenGender) {
+  listenGender = next
+  try {
+    localStorage.setItem(GENDER_KEY, next)
+  } catch {
+    /* ignore quota / private mode */
+  }
+  emitGender()
+}
+
+export function subscribeListenGender(fn: () => void) {
+  genderListeners.add(fn)
+  return () => genderListeners.delete(fn)
+}
+
+export function useListenGender() {
+  return useSyncExternalStore(subscribeListenGender, getListenGender, () => 'male' as ListenGender)
+}
+
+function namedGender(voice: SpeechSynthesisVoice): ListenGender | null {
+  const name = voice.name.toLowerCase()
+  if (MALE_HINTS.some((h) => name.includes(h))) return 'male'
+  if (FEMALE_HINTS.some((h) => name.includes(h))) return 'female'
+  return null
+}
+
+function pickUsVoice(voices: SpeechSynthesisVoice[], want: ListenGender) {
   const english = voices.filter((v) => v.lang.toLowerCase().startsWith('en'))
   const us = english.filter(isUs)
   const notBritish = english.filter((v) => !isBritish(v))
   const pool = us.length ? us : notBritish.length ? notBritish : english
-  for (const want of PREFERRED) {
-    const hit = pool.find((v) => v.name.toLowerCase().includes(want))
-    if (hit && !isBritish(hit)) return hit
+  const matched = pool.filter((v) => namedGender(v) === want && !isBritish(v))
+  if (matched.length) return matched.find(isUs) ?? matched[0]
+
+  if (want === 'female') {
+    const google = pool.find((v) => v.name.toLowerCase().includes('google us english') && !isBritish(v))
+    if (google) return google
   }
-  return pool.find((v) => v.default && !isBritish(v)) ?? pool[0] ?? null
+
+  const rest = pool.filter((v) => {
+    if (isBritish(v)) return false
+    const g = namedGender(v)
+    if (g && g !== want) return false
+    if (want === 'male' && v.name.toLowerCase().includes('google us english')) return false
+    return true
+  })
+  return rest.find(isUs) ?? rest[0] ?? pool.find((v) => !isBritish(v)) ?? pool[0] ?? null
 }
 
 function loadVoices(): Promise<SpeechSynthesisVoice[]> {
@@ -170,7 +256,7 @@ export async function startChapterSpeak(opts: {
   speechSynthesis.cancel()
   const voices = await loadVoices()
   if (token !== gen) return
-  picked = pickUsVoice(voices)
+  picked = pickUsVoice(voices, listenGender)
   const from = opts.fromVerse && opts.fromVerse > 1 ? opts.fromVerse : 1
   const slice = opts.verses.filter((v) => v.verse >= from)
   const intro =
