@@ -295,6 +295,18 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
 }
+.chapter-next {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.15rem;
+}
+.chapter-next a {
+  display: inline-block;
+  padding: 0.55rem 0;
+  font-weight: 500;
+}
+.chapter-next.done {
+  color: #5c564c;
+}
 .listen-row {
   display: flex;
   flex-wrap: wrap;

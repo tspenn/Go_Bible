@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
 import { Link, navigate } from '../App'
-import { findVerse, paragraphsInChapter, versesInChapter } from '../data/kjv'
+import { findVerse, nextChapter, paragraphsInChapter, versesInChapter } from '../data/kjv'
 import { ensureNavesBook, topicsForVerse, useNaves } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
 import { dictForVerse } from '../data/dictionary'
@@ -62,6 +62,7 @@ export function VersePage({
   }, [bookSlug])
   const list = versesInChapter(bookSlug, chapter)
   const paras = paragraphsInChapter(bookSlug, chapter)
+  const next = nextChapter(bookSlug, chapter)
   const selected = verse ? findVerse(bookSlug, chapter, verse) : list[0]
   useEffect(() => {
     if (!list.length) return
@@ -500,6 +501,15 @@ export function VersePage({
             </p>
           ))}
         </div>
+        {next ? (
+          <p className="chapter-next">
+            <Link to={`/bible/${next.bookSlug}/${next.chapter}`}>
+              Next · {next.bookName} {next.chapter}
+            </Link>
+          </p>
+        ) : (
+          <p className="chapter-next done">End of the Bible</p>
+        )}
       </div>
 
       {wordPopup?.kind === 'strongs' && (

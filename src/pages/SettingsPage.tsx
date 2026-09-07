@@ -24,6 +24,7 @@ export function SettingsPage() {
         <li>On the home page, tap Old Testament or New Testament.</li>
         <li>Tap a book by name.</li>
         <li>Tap a chapter labeled with the book name, like John 3.</li>
+        <li>At the end of a chapter, tap Next to keep reading. You do not have to go back to the book list.</li>
       </ol>
       <p>
         <Link to="/bible/john/1">Start in John</Link>

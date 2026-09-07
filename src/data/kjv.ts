@@ -132,6 +132,18 @@ export function chapterCount(bookSlug: string) {
   return bySlug.get(bookSlug)?.chapters.length ?? 0
 }
 
+export function nextChapter(bookSlug: string, chapter: number) {
+  const book = findBook(bookSlug)
+  if (!book) return null
+  if (chapter < book.chapterCount) {
+    return { bookSlug: book.slug, bookName: book.name, chapter: chapter + 1 }
+  }
+  const i = bibleBooks.findIndex((b) => b.slug === bookSlug)
+  const nxt = i >= 0 ? bibleBooks[i + 1] : undefined
+  if (!nxt) return null
+  return { bookSlug: nxt.slug, bookName: nxt.name, chapter: 1 }
+}
+
 export function findVerse(bookSlug: string, chapter: number, verse: number) {
   const book = bySlug.get(bookSlug)
   const text = book?.chapters[chapter - 1]?.[verse - 1]
