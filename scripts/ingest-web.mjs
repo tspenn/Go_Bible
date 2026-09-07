@@ -1,12 +1,13 @@
 /**
  * Download eBible.org WEB USFM and emit compact JSON for the app.
- * Divine name Yahweh is rendered LORD in the output (do not call this WEB).
+ * Divine name Yahweh is rendered "the LORD" in the output (do not call this WEB).
  */
 import { execFileSync } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { get } from 'node:https'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { renderYahweh } from './render-yahweh.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const tmp = join(root, 'tmp-web')
@@ -119,7 +120,7 @@ function cleanVerse(raw) {
   s = s.replace(/\\\+?[a-z]+\d*\*?/gi, ' ')
   s = s.replace(/\|strong="[^"]*"/g, '')
   s = s.replace(/\s+/g, ' ').trim()
-  s = s.replace(/Yahweh/g, 'LORD')
+  s = renderYahweh(s)
   return s
 }
 
@@ -196,7 +197,7 @@ async function main() {
   if (yahwehLeft) throw new Error(`Yahweh still present in ${yahwehLeft} places`)
 
   const payload = {
-    source: 'eBible.org eng-web USFM (public domain). Divine name rendered LORD.',
+    source: 'eBible.org eng-web USFM (public domain). Divine name Yahweh rendered the LORD.',
     books,
   }
   writeFileSync(outPath, JSON.stringify(payload))

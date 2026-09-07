@@ -18,7 +18,7 @@ export function AboutPage() {
         This is a tool for reading Scripture, not a stand-in for the Bible you already trust. Newer
         English Bibles such as the NIV, ESV, NASB, and NLT are under copyright. Those laws limit what
         a free app may give you in full. We are not free to ship those translations, so the words on
-        the page are a public-domain English text, with the divine name shown as LORD, set in
+        the page are a public-domain English text, with the divine name Yahweh shown as the LORD, set in
         paragraphs the way the source text groups them.
       </p>
 

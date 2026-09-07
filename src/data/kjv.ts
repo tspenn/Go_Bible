@@ -19,7 +19,7 @@ const bySlug = new Map(data.books.map((b) => [b.slug, b]))
 export const TRANSLATION = 'Go-Bible text'
 export const TRANSLATION_ABBR = 'Go-Bible'
 export const SOURCE_LINE =
-  'Go-Bible text, based on the World English Bible (public domain). Divine name rendered LORD.'
+  'Go-Bible text, based on the World English Bible (public domain). Divine name Yahweh rendered the LORD.'
 
 export const bibleBooks = data.books.map((b) => ({
   name: b.name,

@@ -7,7 +7,7 @@ Look Up · Walking By Faith Companion (Skyland Publishing).
 
 ## Features
 
-- Full Go-Bible text (WEB base, divine name rendered LORD)
+- Full Go-Bible text (WEB base, divine name Yahweh rendered the LORD)
 - Verse tabs: Scripture · Scofield 1917 · Henry · Dictionary · Topics · Robertson
 - Strong’s 1890 long-press on seeded words
 - Matthew Henry complete commentary seed notes
