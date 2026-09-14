@@ -1,10 +1,11 @@
+import { commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
 import { searchDictionary, type DictEntry } from './dictionary'
 import { SEED_NOTES } from './henry'
-import { bookName } from './kjv'
+import { bookName, searchVerses } from './kjv'
 import { searchTopics } from './naves'
 import { SCOFIELD } from './scofield'
 
-export type StudySource = 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
+export type StudySource = 'scripture' | 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
 
 export type StudyHit = {
   source: StudySource
@@ -20,6 +21,7 @@ type HenryRow = { b: string; c: number; v: number; r: string; s: string; h: stri
 type TskRow = { t: string; b: string; c: number; v: number }
 
 const empty = (): StudyResults => ({
+  scripture: [],
   naves: [],
   scofield: [],
   henry: [],
@@ -41,12 +43,20 @@ function verseHref(bookSlug: string, chapter: number, verse: number, tab: string
   return `/bible/${bookSlug}/${chapter}/${verse}?tab=${tab}`
 }
 
-function scoreTitle(title: string, q: string) {
+function scoreTitle(title: string, terms: string[]) {
   const t = title.toLowerCase()
-  if (t === q) return 0
-  if (t.startsWith(q)) return 1
-  if (t.includes(q)) return 2
-  return 3
+  let best = 99
+  for (let i = 0; i < terms.length; i++) {
+    const q = terms[i]
+    if (!q) continue
+    let s = 4
+    if (t === q) s = 0
+    else if (t.startsWith(q)) s = 1
+    else if (t.includes(q)) s = 2
+    const weighted = s + i * 0.05
+    if (weighted < best) best = weighted
+  }
+  return best
 }
 
 let scofieldRows: ScoRow[] | null = null
@@ -83,13 +93,13 @@ function eastonHit(d: DictEntry): StudyHit {
   }
 }
 
-function searchScofield(q: string, limit: number): StudyHit[] {
+function searchScofield(terms: string[], limit: number): StudyHit[] {
   const hits: StudyHit[] = []
   const seen = new Set<string>()
   for (const n of SCOFIELD) {
     const title = n.heading || n.kjvPhrase
-    const hay = `${title} ${n.body}`.toLowerCase()
-    if (!hay.includes(q)) continue
+    const hay = `${title} ${n.body} ${n.kjvPhrase} ${n.webPhrase}`
+    if (!hayMatches(hay, terms)) continue
     const key = `${n.bookSlug}:${n.chapter}:${n.verse}:${title.toLowerCase()}`
     seen.add(key)
     hits.push({
@@ -102,9 +112,9 @@ function searchScofield(q: string, limit: number): StudyHit[] {
   const extra = (scofieldRows ?? [])
     .filter((r) => {
       if (/^(writer|date|theme|title)$/i.test(r.t)) return false
-      return `${r.t} ${r.s}`.toLowerCase().includes(q)
+      return hayMatches(`${r.t} ${r.s}`, terms)
     })
-    .sort((a, b) => scoreTitle(a.t, q) - scoreTitle(b.t, q))
+    .sort((a, b) => scoreTitle(a.t, terms) - scoreTitle(b.t, terms))
   for (const r of extra) {
     const key = `${r.b}:${r.c}:${r.v}:${r.t.toLowerCase()}`
     if (seen.has(key)) continue
@@ -120,11 +130,11 @@ function searchScofield(q: string, limit: number): StudyHit[] {
   return hits.slice(0, limit)
 }
 
-function searchHenry(q: string, limit: number): StudyHit[] {
+function searchHenry(terms: string[], limit: number): StudyHit[] {
   const hits: StudyHit[] = []
   const seen = new Set<string>()
   for (const n of SEED_NOTES) {
-    if (!n.body.toLowerCase().includes(q)) continue
+    if (!hayMatches(n.body, terms)) continue
     const key = `${n.bookSlug}:${n.chapter}:${n.verse}:${n.range ?? ''}`
     seen.add(key)
     hits.push({
@@ -136,8 +146,8 @@ function searchHenry(q: string, limit: number): StudyHit[] {
   }
   const dump = henryRows ?? []
   const ranked = dump
-    .filter((r) => r.h.includes(q) || r.s.toLowerCase().includes(q))
-    .sort((a, b) => Number(b.s.toLowerCase().includes(q)) - Number(a.s.toLowerCase().includes(q)))
+    .filter((r) => hayMatches(`${r.h} ${r.s}`, terms))
+    .sort((a, b) => Number(hayMatches(b.s, terms)) - Number(hayMatches(a.s, terms)))
   for (const r of ranked) {
     const key = `${r.b}:${r.c}:${r.v}:${r.r}`
     if (seen.has(key)) continue
@@ -154,10 +164,10 @@ function searchHenry(q: string, limit: number): StudyHit[] {
   return hits.slice(0, limit)
 }
 
-function searchTsk(q: string, limit: number): StudyHit[] {
+function searchTsk(terms: string[], limit: number): StudyHit[] {
   const extra = (tskRows ?? [])
-    .filter((r) => r.t.toLowerCase().includes(q))
-    .sort((a, b) => scoreTitle(a.t, q) - scoreTitle(b.t, q) || a.t.length - b.t.length)
+    .filter((r) => hayMatches(r.t, terms))
+    .sort((a, b) => scoreTitle(a.t, terms) - scoreTitle(b.t, terms) || a.t.length - b.t.length)
   return extra.slice(0, limit).map((r) => ({
     source: 'tsk' as const,
     title: r.t,
@@ -166,11 +176,34 @@ function searchTsk(q: string, limit: number): StudyHit[] {
   }))
 }
 
+function searchEaston(terms: string[], limit: number): StudyHit[] {
+  const seen = new Set<string>()
+  const hits: StudyHit[] = []
+  for (let i = 0; i < terms.length; i++) {
+    const term = terms[i]
+    if (!term) continue
+    for (const d of searchDictionary(term, limit, i > 0)) {
+      if (seen.has(d.slug)) continue
+      seen.add(d.slug)
+      hits.push(eastonHit(d))
+      if (hits.length >= limit) return hits
+    }
+  }
+  return hits
+}
+
 export async function searchStudy(q: string): Promise<StudyResults> {
   const n = q.trim().toLowerCase()
   const out = empty()
   if (n.length < 2) return out
+  const notesTerms = commentarySearchTerms(q)
   await loadIndexes()
+  out.scripture = searchVerses(scriptureSearchTerms(q), 20).map((v) => ({
+    source: 'scripture',
+    title: `${v.book} ${v.chapter}:${v.verse}`,
+    detail: clip(v.text, 180),
+    href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
+  }))
   out.naves = searchTopics(q)
     .slice(0, 20)
     .map((t) => ({
@@ -179,14 +212,15 @@ export async function searchStudy(q: string): Promise<StudyResults> {
       detail: t.summary,
       href: `/topics/${t.slug}`,
     }))
-  out.scofield = searchScofield(n, 16)
-  out.henry = searchHenry(n, 12)
-  out.tsk = searchTsk(n, 12)
-  out.easton = searchDictionary(q, 12).map(eastonHit)
+  out.scofield = searchScofield(notesTerms, 16)
+  out.henry = searchHenry(notesTerms, 12)
+  out.tsk = searchTsk(notesTerms, 12)
+  out.easton = searchEaston(notesTerms, 12)
   return out
 }
 
 export const STUDY_LABELS: Record<StudySource, string> = {
+  scripture: 'Scripture',
   naves: 'Topics',
   scofield: 'Notes',
   henry: 'Commentary',
@@ -194,4 +228,4 @@ export const STUDY_LABELS: Record<StudySource, string> = {
   easton: 'Dictionary',
 }
 
-export const STUDY_ORDER: StudySource[] = ['naves', 'scofield', 'henry', 'tsk', 'easton']
+export const STUDY_ORDER: StudySource[] = ['scripture', 'naves', 'scofield', 'henry', 'tsk', 'easton']

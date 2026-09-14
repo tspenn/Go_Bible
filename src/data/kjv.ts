@@ -196,6 +196,52 @@ export function paragraphsInChapter(bookSlug: string, chapter: number) {
   return groups
 }
 
+export function searchVerses(needles: string[], limit = 24): Verse[] {
+  const terms = [...new Set(needles.map((t) => t.trim().toLowerCase()).filter((t) => t.length >= 2))]
+  if (!terms.length) return []
+  const scored: { verse: Verse; score: number }[] = []
+  for (const book of data.books) {
+    book.chapters.forEach((ch, ci) => {
+      ch.forEach((text, vi) => {
+        const low = text.toLowerCase()
+        let score = -1
+        for (let i = 0; i < terms.length; i++) {
+          const t = terms[i]
+          if (!t || !low.includes(t)) continue
+          const next = i === 0 ? 0 : 1
+          if (score < 0 || next < score) score = next
+        }
+        if (score < 0) return
+        scored.push({
+          score,
+          verse: {
+            book: book.name,
+            bookSlug: book.slug,
+            chapter: ci + 1,
+            verse: vi + 1,
+            text,
+          },
+        })
+      })
+    })
+  }
+  scored.sort((a, b) => a.score - b.score || a.verse.bookSlug.localeCompare(b.verse.bookSlug) || a.verse.chapter - b.verse.chapter || a.verse.verse - b.verse.verse)
+  const out: Verse[] = []
+  const seen = new Set<string>()
+  const perBook = new Map<string, number>()
+  for (const row of scored) {
+    const key = `${row.verse.bookSlug}:${row.verse.chapter}:${row.verse.verse}`
+    if (seen.has(key)) continue
+    const n = perBook.get(row.verse.bookSlug) ?? 0
+    if (n >= 3) continue
+    perBook.set(row.verse.bookSlug, n + 1)
+    seen.add(key)
+    out.push(row.verse)
+    if (out.length >= limit) break
+  }
+  return out
+}
+
 export function parseRef(input: string) {
   const cleaned = input.trim().replace(/\./g, ' ').replace(/:/g, ' ').replace(/\s+/g, ' ')
   const match = cleaned.match(/^(.+?)\s+(\d+)\s+(\d+)$/)

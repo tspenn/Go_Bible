@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { expandSearchTerms, nameMatchesTerm } from '../lib/searchTerms'
 import { findBook, findVerse, parseRef, type Verse } from './kjv'
 import index from './naves-index.json' with { type: 'json' }
 
@@ -270,19 +271,30 @@ export function topicsForVerse(bookSlug: string, chapter: number, verse: number)
 }
 
 export function searchTopics(q: string): NaveTopic[] {
-  const n = q.trim().toLowerCase()
-  if (!n) return TOPICS
-  const seedHits = TOPICS.filter(
-    (t) =>
-      t.name.toLowerCase().includes(n) ||
-      t.summary.toLowerCase().includes(n) ||
-      t.refs.some((r) => r.toLowerCase().includes(n)),
+  const terms = expandSearchTerms(q)
+  const original = terms[0] ?? ''
+  if (!original) return TOPICS
+  const seedHits = TOPICS.filter((t) =>
+    terms.some((n, i) => {
+      const loose = i === 0
+      return (
+        nameMatchesTerm(t.name, n, loose) ||
+        (loose && t.summary.toLowerCase().includes(n)) ||
+        (loose && t.refs.some((r) => r.toLowerCase().includes(n))) ||
+        t.slug === n ||
+        (loose && t.slug.includes(n.replace(/\s+/g, '-')))
+      )
+    }),
   )
   const seen = new Set(seedHits.map((t) => t.slug))
   const dumpHits: NaveTopic[] = []
   for (const t of INDEX.topics) {
     if (seen.has(t.slug)) continue
-    if (!t.name.toLowerCase().includes(n) && !t.slug.includes(n.replace(/\s+/g, '-'))) continue
+    const hit = terms.some((n, i) => {
+      const loose = i === 0
+      return nameMatchesTerm(t.name, n, loose) || t.slug === n || (loose && t.slug.includes(n.replace(/\s+/g, '-')))
+    })
+    if (!hit) continue
     dumpHits.push({ slug: t.slug, name: t.name, summary: '', refs: [] })
     if (dumpHits.length >= 80) break
   }

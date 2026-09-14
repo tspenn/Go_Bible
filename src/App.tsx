@@ -101,8 +101,8 @@ function HeaderSearch() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="John 3:16 or a topic"
-        aria-label="Search a verse or topic"
+        placeholder="John 3:16 or a word"
+        aria-label="Search a verse or word"
         enterKeyHint="search"
       />
       <button type="submit" className="sr-only">

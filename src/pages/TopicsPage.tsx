@@ -138,8 +138,8 @@ export function TopicsPage({ search = '' }: { search?: string }) {
               setSuggestOpen(false)
             }
           }}
-          placeholder="Search topics"
-          aria-label="Search topics"
+          placeholder="Search Scripture and topics"
+          aria-label="Search Scripture and topics"
           aria-autocomplete="list"
           aria-expanded={showList}
           aria-controls="topic-suggest"
@@ -175,7 +175,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
       {searching ? (
         <>
           {loading && !results ? <p className="lead">Searching…</p> : null}
-          {results && total === 0 ? <p>No matching topics.</p> : null}
+          {results && total === 0 ? <p>No matching verses or topics.</p> : null}
           {results
             ? STUDY_ORDER.map((src) =>
                 results[src].length > 0 ? (

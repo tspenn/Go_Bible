@@ -83,7 +83,7 @@ export function findDict(slug: string) {
   return DICTIONARY.find((d) => d.slug === slug)
 }
 
-export function searchDictionary(q: string, limit = 15): DictEntry[] {
+export function searchDictionary(q: string, limit = 15, namesOnly = false): DictEntry[] {
   const n = q.trim().toLowerCase()
   if (n.length < 2) return []
   const slugQ = n.replace(/\s+/g, '-')
@@ -99,7 +99,7 @@ export function searchDictionary(q: string, limit = 15): DictEntry[] {
     seen.add(d.slug)
     if (nameHits.length >= limit) return nameHits
   }
-  if (n.length < 4) return nameHits
+  if (namesOnly || n.length < 4) return nameHits
   const bodyHits: DictEntry[] = []
   for (const d of DICTIONARY) {
     if (seen.has(d.slug)) continue
