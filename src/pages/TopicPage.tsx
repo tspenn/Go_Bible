@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from '../App'
+import { ShareArrow, sharePageUrl } from '../components/ShareArrow'
 import { parseRef, type Verse } from '../data/kjv'
 import {
   ensureNavesTopic,
@@ -79,7 +80,10 @@ export function TopicPage({ slug }: { slug: string }) {
   return (
     <article className="page">
       <p className="eyebrow">Nave’s</p>
-      <h1>{topic.name}</h1>
+      <div className="page-head">
+        <h1>{topic.name}</h1>
+        <ShareArrow title={topic.name} url={sharePageUrl(`/topics/${topic.slug}`)} />
+      </div>
       {topic.seed ? <p className="lead">{topic.seed.summary}</p> : null}
       {dump ? <p className="source-line">{NAVES_SOURCE}</p> : null}
       {seedOnly ? <NaveScripture refs={seedRefs(topic.seed!.refs)} /> : null}

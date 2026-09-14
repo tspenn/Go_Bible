@@ -21,6 +21,7 @@ import {
 } from '../data/robertson'
 import { BookPicker } from '../components/BookPicker'
 import { ListenControl } from '../components/ListenControl'
+import { ShareArrow, sharePageUrl } from '../components/ShareArrow'
 import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu'
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
 import { DictCard, StrongsCard, VerseWords, type WordPopup } from '../components/StrongsGloss'
@@ -383,9 +384,19 @@ export function VersePage({
         <p className="reader-jump">
           <Link to={`/bible/${bookSlug}`}>All chapters</Link>
         </p>
-        <h1>
-          {bookName} {chapter}
-        </h1>
+        <div className="page-head">
+          <h1>
+            {bookName} {chapter}
+          </h1>
+          <ShareArrow
+            title={verse != null ? `${bookName} ${chapter}:${verse}` : `${bookName} ${chapter}`}
+            url={
+              verse != null
+                ? sharePageUrl(`/bible/${bookSlug}/${chapter}/${verse}`)
+                : sharePageUrl(`/bible/${bookSlug}/${chapter}`)
+            }
+          />
+        </div>
         <ListenControl bookName={bookName} chapter={chapter} verses={list} fromVerse={verse} />
 
         <div

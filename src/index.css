@@ -295,6 +295,52 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
 }
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.page-head h1 {
+  flex: 1;
+  min-width: 0;
+}
+.share-arrow {
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  margin-top: 0.2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue-deep);
+  cursor: pointer;
+}
+.share-arrow svg {
+  display: block;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0 auto;
+}
+.share-arrow path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.share-arrow:hover,
+.share-arrow:focus-visible {
+  color: var(--gold);
+}
+.share-arrow.copied {
+  color: var(--gold);
+}
+.notes-sheet-tools .share-arrow {
+  width: 2.1rem;
+  height: 2.1rem;
+  margin-top: 0;
+}
 .chapter-next {
   margin: 1.75rem 0 0.5rem;
   font-size: 1.15rem;
@@ -993,7 +1039,7 @@ a.tsk-go:active {
 .notes-sheet-bar {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   margin-bottom: 0.75rem;
 }

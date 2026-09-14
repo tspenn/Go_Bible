@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from '../App'
+import { ShareArrow, sharePageUrl } from './ShareArrow'
 import { linkBodyBits, type DictEntry } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
 import {
@@ -80,6 +81,10 @@ export function NotesSheet({
           {bookName} {chapter}:{verse}
         </h2>
         <div className="notes-sheet-tools">
+          <ShareArrow
+            title={`${bookName} ${chapter}:${verse}`}
+            url={sharePageUrl(`/bible/${bookSlug}/${chapter}/${verse}`)}
+          />
           {signedIn ? (
             <button
               type="button"
