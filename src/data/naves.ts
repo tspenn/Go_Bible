@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { expandSearchTerms, nameMatchesTerm } from '../lib/searchTerms'
+import { expandSearchTerms, nameMatchesTerm, skipTopicKeys } from '../lib/searchTerms'
 import { findBook, findVerse, parseRef, type Verse } from './kjv'
 import index from './naves-index.json' with { type: 'json' }
 
@@ -112,7 +112,7 @@ type BookPayload = {
 
 type IndexPayload = {
   source: string
-  topics: { slug: string; name: string }[]
+  topics: { slug: string; name: string; keys?: string }[]
 }
 
 const INDEX = index as IndexPayload
@@ -270,6 +270,18 @@ export function topicsForVerse(bookSlug: string, chapter: number, verse: number)
   return [...seedHits, ...extra]
 }
 
+function topicMatches(
+  t: { slug: string; name: string; keys?: string },
+  term: string,
+  loose: boolean,
+) {
+  if (nameMatchesTerm(t.name, term, loose)) return true
+  if (t.slug === term) return true
+  if (loose && t.slug.includes(term.replace(/\s+/g, '-'))) return true
+  if (t.keys && !skipTopicKeys(term) && nameMatchesTerm(t.keys, term, loose)) return true
+  return false
+}
+
 export function searchTopics(q: string): NaveTopic[] {
   const terms = expandSearchTerms(q)
   const original = terms[0] ?? ''
@@ -278,11 +290,9 @@ export function searchTopics(q: string): NaveTopic[] {
     terms.some((n, i) => {
       const loose = i === 0
       return (
-        nameMatchesTerm(t.name, n, loose) ||
+        topicMatches(t, n, loose) ||
         (loose && t.summary.toLowerCase().includes(n)) ||
-        (loose && t.refs.some((r) => r.toLowerCase().includes(n))) ||
-        t.slug === n ||
-        (loose && t.slug.includes(n.replace(/\s+/g, '-')))
+        (loose && t.refs.some((r) => r.toLowerCase().includes(n)))
       )
     }),
   )
@@ -290,15 +300,30 @@ export function searchTopics(q: string): NaveTopic[] {
   const dumpHits: NaveTopic[] = []
   for (const t of INDEX.topics) {
     if (seen.has(t.slug)) continue
-    const hit = terms.some((n, i) => {
-      const loose = i === 0
-      return nameMatchesTerm(t.name, n, loose) || t.slug === n || (loose && t.slug.includes(n.replace(/\s+/g, '-')))
-    })
+    const hit = terms.some((n, i) => topicMatches(t, n, i === 0))
     if (!hit) continue
     dumpHits.push({ slug: t.slug, name: t.name, summary: '', refs: [] })
     if (dumpHits.length >= 80) break
   }
+  dumpHits.sort((a, b) => topicRank(a.name, terms) - topicRank(b.name, terms) || a.name.localeCompare(b.name))
   return [...seedHits, ...dumpHits]
+}
+
+function topicRank(name: string, terms: string[]) {
+  const n = name.toLowerCase()
+  let best = 99
+  for (let i = 0; i < terms.length; i++) {
+    const t = terms[i]
+    if (!t) continue
+    let s = 6
+    if (n === t) s = 0
+    else if (n.startsWith(t)) s = 1
+    else if (nameMatchesTerm(name, t, false)) s = 2
+    else if (n.includes(t)) s = 4
+    const w = s + i * 0.02
+    if (w < best) best = w
+  }
+  return best
 }
 
 const FEATURED_ONE_WORDS = [
@@ -393,4 +418,81 @@ export function versesForNaveRef(ref: NaveRef): Verse[] {
     if (found) out.push(found)
   }
   return out
+}
+
+function dumpRefCount(dump: NaveDumpTopic) {
+  return dump.subtopics.reduce((n, s) => n + s.refs.length, 0)
+}
+
+function refsFromDump(dump: NaveDumpTopic, limit: number): NaveRef[] {
+  const general = dump.subtopics.filter((s) => /general scriptures/i.test(s.label))
+  const rest = dump.subtopics.filter((s) => !/general scriptures/i.test(s.label))
+  const out: NaveRef[] = []
+  const seen = new Set<string>()
+  for (const sub of [...general, ...rest]) {
+    for (const ref of sub.refs) {
+      const key = `${ref.bookSlug}:${ref.chapter}:${ref.verse}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(ref)
+      if (out.length >= limit) return out
+    }
+  }
+  return out
+}
+
+function pushVerse(verses: Verse[], seen: Set<string>, found: Verse | undefined, limit: number) {
+  if (!found) return false
+  const key = `${found.bookSlug}:${found.chapter}:${found.verse}`
+  if (seen.has(key)) return false
+  seen.add(key)
+  verses.push(found)
+  return verses.length >= limit
+}
+
+/** Verses Nave lists under matching topics. Follows empty “see also” heads one hop. */
+export async function versesFromNaveTopics(slugs: string[], q: string, limit = 8): Promise<Verse[]> {
+  const unique = [...new Set(slugs.filter(Boolean))].slice(0, 8)
+  await Promise.all(unique.map((s) => ensureNavesTopic(s)))
+  const hop: string[] = []
+  for (const slug of unique) {
+    const dump = dumpBySlug.get(slug)
+    if (dump && dumpRefCount(dump) === 0) hop.push(...dump.related)
+  }
+  const extra = [...new Set(hop)].filter((s) => !unique.includes(s)).slice(0, 8)
+  await Promise.all(extra.map((s) => ensureNavesTopic(s)))
+  const typed = q.trim().toLowerCase()
+  const ranked = [...unique, ...extra].sort((a, b) => {
+    const da = dumpBySlug.get(a)
+    const db = dumpBySlug.get(b)
+    const na = da ? dumpRefCount(da) : 0
+    const nb = db ? dumpRefCount(db) : 0
+    const aHuge = na > 80 && !nameMatchesTerm(naveTopicName(a), typed, true)
+    const bHuge = nb > 80 && !nameMatchesTerm(naveTopicName(b), typed, true)
+    if (aHuge !== bHuge) return aHuge ? 1 : -1
+    const aEmpty = na === 0 && !TOPICS.some((t) => t.slug === a)
+    const bEmpty = nb === 0 && !TOPICS.some((t) => t.slug === b)
+    if (aEmpty !== bEmpty) return aEmpty ? 1 : -1
+    return 0
+  })
+  const verses: Verse[] = []
+  const seen = new Set<string>()
+  for (const slug of ranked) {
+    const seed = TOPICS.find((t) => t.slug === slug)
+    if (seed) {
+      for (const r of seed.refs) {
+        const p = parseRef(r)
+        if (!p) continue
+        if (pushVerse(verses, seen, findVerse(p.bookSlug, p.chapter, p.verse), limit)) return verses
+      }
+    }
+    const dump = dumpBySlug.get(slug)
+    if (!dump) continue
+    const tooBig = dumpRefCount(dump) > 80 && !nameMatchesTerm(dump.name, typed, true)
+    if (tooBig) continue
+    for (const ref of refsFromDump(dump, limit)) {
+      if (pushVerse(verses, seen, findVerse(ref.bookSlug, ref.chapter, ref.verse), limit)) return verses
+    }
+  }
+  return verses
 }

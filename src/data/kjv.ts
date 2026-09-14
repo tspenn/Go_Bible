@@ -1,5 +1,6 @@
 import web from './web.json' with { type: 'json' }
 import paraData from './web-paras.json' with { type: 'json' }
+import { hasWord, stem } from '../lib/searchTerms'
 
 export type Verse = {
   book: string
@@ -199,17 +200,31 @@ export function paragraphsInChapter(bookSlug: string, chapter: number) {
 export function searchVerses(needles: string[], limit = 24): Verse[] {
   const terms = [...new Set(needles.map((t) => t.trim().toLowerCase()).filter((t) => t.length >= 2))]
   if (!terms.length) return []
+  const prepared = terms.map((raw, i) => ({ raw, stem: stem(raw), i }))
+  const wordRe = /[a-z']+/g
   const scored: { verse: Verse; score: number }[] = []
   for (const book of data.books) {
     book.chapters.forEach((ch, ci) => {
       ch.forEach((text, vi) => {
         const low = text.toLowerCase()
         let score = -1
-        for (let i = 0; i < terms.length; i++) {
-          const t = terms[i]
-          if (!t || !low.includes(t)) continue
-          const next = i === 0 ? 0 : 1
-          if (score < 0 || next < score) score = next
+        for (const t of prepared) {
+          if (!hasWord(low, t.raw)) continue
+          if (score < 0 || t.i < score) score = t.i
+          if (score === 0) break
+        }
+        if (score !== 0) {
+          const tokens = low.match(wordRe) ?? []
+          for (const tok of tokens) {
+            if (tok.length < 4) continue
+            const st = stem(tok)
+            if (st.length < 4) continue
+            for (const t of prepared) {
+              if (t.stem.length < 4 || st !== t.stem) continue
+              if (score < 0 || t.i < score) score = t.i
+            }
+            if (score === 0) break
+          }
         }
         if (score < 0) return
         scored.push({

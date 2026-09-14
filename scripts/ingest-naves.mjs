@@ -10,6 +10,7 @@
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { topicKeys } from './naves-keys.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const rawPath = join(root, 'scripts', 'raw', 'naves-topical-bible.json')
@@ -278,7 +279,8 @@ for (const row of dump.data ?? []) {
   const bucket = byLetter.get(letter) ?? []
   bucket.push(topic)
   byLetter.set(letter, bucket)
-  indexTopics.push({ slug, name })
+  const keys = topicKeys(related, subtopics)
+  indexTopics.push(keys ? { slug, name, keys } : { slug, name })
 }
 
 indexTopics.sort((a, b) => a.name.localeCompare(b.name))
