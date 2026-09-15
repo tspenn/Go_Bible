@@ -627,6 +627,15 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   flex-direction: column;
 }
 .topic-list li span { font-size: 0.95rem; opacity: 0.8; }
+.topic-list li.topic-teach {
+  gap: 0.45rem;
+}
+.topic-list li .topic-note {
+  opacity: 1;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  max-width: 42rem;
+}
 .nave-see-more {
   list-style: none;
   padding: 0.85rem 0 0;

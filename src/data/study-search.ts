@@ -1,9 +1,10 @@
 import { boostedScriptureRefs, commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
-import { searchDictionary, type DictEntry } from './dictionary'
-import { SEED_NOTES } from './henry'
+import { DICTIONARY, type DictEntry } from './dictionary'
+import { ensureHenryBook, henryNotesForVerse, SEED_NOTES } from './henry'
 import { bookName, findVerse, searchVerses, type Verse } from './kjv'
-import { searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
-import { SCOFIELD } from './scofield'
+import { featuredOneWords, searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
+import { ensureScofieldBook, notesForVerse, SCOFIELD } from './scofield'
+import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from './starters'
 
 export type StudySource = 'scripture' | 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
 
@@ -12,6 +13,7 @@ export type StudyHit = {
   title: string
   detail: string
   href: string
+  full?: boolean
 }
 
 export type StudyResults = Record<StudySource, StudyHit[]> & { naveMore: NaveReading[] }
@@ -34,6 +36,60 @@ function clip(s: string, n: number) {
   const t = s.replace(/\s+/g, ' ').trim()
   if (t.length <= n) return t
   return `${t.slice(0, n).trim()}…`
+}
+
+function plain(s: string) {
+  return s.replace(/\s+/g, ' ').trim()
+}
+
+const ALL_STARTERS: StarterTopic[] = [...STARTER_TOPICS, ...MORE_STARTERS, ...MORE_NAVE_STARTERS]
+
+/** Featured Topics chips → the Scofield note already picked for that word. */
+const CHIP_STARTER_ID: Record<string, string> = {
+  jesus: 'jesus',
+  salvation: 'salvation',
+  faith: 'faith',
+  church: 'church',
+  god: 'god',
+  gospel: 'believe',
+  prayer: 'prayer',
+  grace: 'grace',
+  hope: 'hope',
+  love: 'love',
+  atonement: 'atonement',
+  forgiveness: 'forgiveness',
+  resurrection: 'resurrection',
+  judgment: 'judgment',
+  judgement: 'judgment',
+  repentance: 'repentance',
+  spirit: 'holy-spirit',
+}
+
+/** Easton/Smith headwords when the chip itself is not a dictionary name. */
+const CHIP_DICT_SLUGS: Record<string, string[]> = {
+  jesus: ['messiah', 'redeemer', 'nazarene', 'word-of-god'],
+  god: ['word-of-god'],
+  gospel: ['messiah', 'redeemer'],
+  church: ['christian', 'apostle'],
+  spirit: ['spirit'],
+  judgment: ['judge'],
+  judgement: ['judge'],
+  forgiveness: ['atonement'],
+  resurrection: ['redeemer'],
+  repentance: ['atonement'],
+}
+
+function teachingStarter(q: string): StarterTopic | undefined {
+  const n = q.trim().toLowerCase()
+  const id = CHIP_STARTER_ID[n]
+  if (id) return ALL_STARTERS.find((t) => t.id === id)
+  return ALL_STARTERS.find((t) => t.naveName.toLowerCase() === n || t.naveSlug === n)
+}
+
+function isChipQuery(q: string) {
+  const n = q.trim().toLowerCase()
+  if (CHIP_STARTER_ID[n]) return true
+  return featuredOneWords().some((w) => w.toLowerCase() === n)
 }
 
 function verseLabel(bookSlug: string, chapter: number, verse: number) {
@@ -86,11 +142,70 @@ async function loadIndexes() {
 }
 
 function eastonHit(d: DictEntry): StudyHit {
+  const source = d.source === 'Smith' ? 'Smith' : 'Easton, 1897'
   return {
     source: 'easton',
     title: d.name,
-    detail: clip(`${d.source === 'Smith' ? 'Smith' : 'Easton, 1897'}. ${d.body}`, 180),
+    detail: `${source}. ${plain(d.body)}`,
     href: '',
+    full: true,
+  }
+}
+
+function dictRank(d: DictEntry, n: string) {
+  const name = d.name.toLowerCase()
+  const slug = d.slug.toLowerCase()
+  if (name === n || slug === n) return 0
+  if (d.aliases.some((a) => a.toLowerCase() === n)) return 0
+  if (name.startsWith(`${n} `) || name.startsWith(`${n},`)) return 1
+  const words = name.split(/[^a-z]+/).filter(Boolean)
+  if (words.includes(n)) return 2
+  if (name.startsWith(n)) return 3
+  return 9
+}
+
+function searchEaston(q: string, limit: number): StudyHit[] {
+  const n = q.trim().toLowerCase()
+  if (n.length < 2) return []
+  const extraSlugs = CHIP_DICT_SLUGS[n] ?? []
+  const ranked = DICTIONARY.map((d) => ({ d, rank: dictRank(d, n) })).filter((x) => x.rank < 9)
+  ranked.sort((a, b) => a.rank - b.rank || a.d.name.localeCompare(b.d.name))
+  const hits: StudyHit[] = []
+  const seen = new Set<string>()
+  for (const { d } of ranked) {
+    if (seen.has(d.slug)) continue
+    seen.add(d.slug)
+    hits.push(eastonHit(d))
+    if (hits.length >= limit) return hits
+  }
+  for (const slug of extraSlugs) {
+    const d = DICTIONARY.find((e) => e.slug === slug)
+    if (!d || seen.has(d.slug)) continue
+    seen.add(d.slug)
+    hits.push(eastonHit(d))
+    if (hits.length >= limit) break
+  }
+  return hits
+}
+
+function scoHit(title: string, bookSlug: string, chapter: number, verse: number, body: string, full: boolean): StudyHit {
+  return {
+    source: 'scofield',
+    title: `${title} · ${verseLabel(bookSlug, chapter, verse)}`,
+    detail: plain(body),
+    href: verseHref(bookSlug, chapter, verse, 'scofield'),
+    full,
+  }
+}
+
+function henryHit(bookSlug: string, chapter: number, verse: number, range: string, body: string, full: boolean): StudyHit {
+  const extra = range && range !== String(verse) ? ` (${range})` : ''
+  return {
+    source: 'henry',
+    title: `${verseLabel(bookSlug, chapter, verse)}${extra}`,
+    detail: plain(body),
+    href: verseHref(bookSlug, chapter, verse, 'henry'),
+    full,
   }
 }
 
@@ -103,12 +218,7 @@ function searchScofield(terms: string[], limit: number): StudyHit[] {
     if (!hayMatches(hay, terms)) continue
     const key = `${n.bookSlug}:${n.chapter}:${n.verse}:${title.toLowerCase()}`
     seen.add(key)
-    hits.push({
-      source: 'scofield',
-      title,
-      detail: `${verseLabel(n.bookSlug, n.chapter, n.verse)} — ${clip(n.body, 140)}`,
-      href: verseHref(n.bookSlug, n.chapter, n.verse, 'scofield'),
-    })
+    hits.push(scoHit(title, n.bookSlug, n.chapter, n.verse, n.body, true))
   }
   const extra = (scofieldRows ?? [])
     .filter((r) => {
@@ -120,12 +230,7 @@ function searchScofield(terms: string[], limit: number): StudyHit[] {
     const key = `${r.b}:${r.c}:${r.v}:${r.t.toLowerCase()}`
     if (seen.has(key)) continue
     seen.add(key)
-    hits.push({
-      source: 'scofield',
-      title: r.t,
-      detail: `${verseLabel(r.b, r.c, r.v)} — ${r.s}`,
-      href: verseHref(r.b, r.c, r.v, 'scofield'),
-    })
+    hits.push(scoHit(r.t, r.b, r.c, r.v, r.s, false))
     if (hits.length >= limit) break
   }
   return hits.slice(0, limit)
@@ -138,12 +243,7 @@ function searchHenry(terms: string[], limit: number): StudyHit[] {
     if (!hayMatches(n.body, terms)) continue
     const key = `${n.bookSlug}:${n.chapter}:${n.verse}:${n.range ?? ''}`
     seen.add(key)
-    hits.push({
-      source: 'henry',
-      title: verseLabel(n.bookSlug, n.chapter, n.verse),
-      detail: clip(n.body, 180),
-      href: verseHref(n.bookSlug, n.chapter, n.verse, 'henry'),
-    })
+    hits.push(henryHit(n.bookSlug, n.chapter, n.verse, n.range ?? '', n.body, true))
   }
   const dump = henryRows ?? []
   const ranked = dump
@@ -153,16 +253,78 @@ function searchHenry(terms: string[], limit: number): StudyHit[] {
     const key = `${r.b}:${r.c}:${r.v}:${r.r}`
     if (seen.has(key)) continue
     seen.add(key)
-    const range = r.r && r.r !== String(r.v) ? ` (${r.r})` : ''
-    hits.push({
-      source: 'henry',
-      title: `${verseLabel(r.b, r.c, r.v)}${range}`,
-      detail: r.s,
-      href: verseHref(r.b, r.c, r.v, 'henry'),
-    })
+    hits.push(henryHit(r.b, r.c, r.v, r.r, r.s, false))
     if (hits.length >= limit) break
   }
   return hits.slice(0, limit)
+}
+
+async function hydrateScofield(hits: StudyHit[]): Promise<StudyHit[]> {
+  const books = new Set<string>()
+  for (const h of hits) {
+    const m = h.href.match(/^\/bible\/([^/]+)\/(\d+)\/(\d+)/)
+    if (m) books.add(m[1]!)
+  }
+  await Promise.all([...books].map((b) => ensureScofieldBook(b)))
+  return hits.map((h) => {
+    const m = h.href.match(/^\/bible\/([^/]+)\/(\d+)\/(\d+)/)
+    if (!m) return h
+    const bookSlug = m[1]!
+    const chapter = Number(m[2])
+    const verse = Number(m[3])
+    const notes = notesForVerse(bookSlug, chapter, verse)
+    const heading = h.title.split(' · ')[0]?.toLowerCase() ?? ''
+    const match =
+      notes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === heading) ?? notes[0]
+    if (!match) return h
+    return scoHit(match.heading || match.kjvPhrase, bookSlug, chapter, verse, match.body, true)
+  })
+}
+
+async function hydrateHenry(hits: StudyHit[]): Promise<StudyHit[]> {
+  const books = new Set<string>()
+  for (const h of hits) {
+    const m = h.href.match(/^\/bible\/([^/]+)\/(\d+)\/(\d+)/)
+    if (m) books.add(m[1]!)
+  }
+  await Promise.all([...books].map((b) => ensureHenryBook(b)))
+  return hits.map((h) => {
+    const m = h.href.match(/^\/bible\/([^/]+)\/(\d+)\/(\d+)/)
+    if (!m) return h
+    const bookSlug = m[1]!
+    const chapter = Number(m[2])
+    const verse = Number(m[3])
+    const range = h.title.match(/\(([^)]+)\)\s*$/)?.[1]
+    const notes = henryNotesForVerse(bookSlug, chapter, verse)
+    const match =
+      (range ? notes.find((n) => n.range === range) : undefined) ??
+      notes.find((n) => n.range !== 'intro') ??
+      notes[0]
+    if (!match) return h
+    return henryHit(match.bookSlug, match.chapter, match.verse, match.range ?? '', match.body, true)
+  })
+}
+
+async function pinTeachingNotes(q: string, sco: StudyHit[], hen: StudyHit[]) {
+  const teach = teachingStarter(q)
+  if (!teach) return { sco, hen }
+  const { bookSlug, chapter, verse, label } = teach.scofield
+  await Promise.all([ensureScofieldBook(bookSlug), ensureHenryBook(bookSlug)])
+  const want = label.toLowerCase()
+  const scoNotes = notesForVerse(bookSlug, chapter, verse)
+  const scoPick =
+    scoNotes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want) ?? scoNotes[0]
+  if (scoPick) {
+    const hit = scoHit(scoPick.heading || scoPick.kjvPhrase, bookSlug, chapter, verse, scoPick.body, true)
+    sco = [hit, ...sco.filter((h) => h.href !== hit.href)]
+  }
+  const henNotes = henryNotesForVerse(bookSlug, chapter, verse).filter((n) => n.range !== 'intro')
+  if (henNotes[0]) {
+    const n = henNotes[0]
+    const hit = henryHit(n.bookSlug, n.chapter, n.verse, n.range ?? '', n.body, true)
+    hen = [hit, ...hen.filter((h) => h.href !== hit.href)]
+  }
+  return { sco, hen }
 }
 
 function searchTsk(terms: string[], limit: number): StudyHit[] {
@@ -177,22 +339,6 @@ function searchTsk(terms: string[], limit: number): StudyHit[] {
   }))
 }
 
-function searchEaston(terms: string[], limit: number): StudyHit[] {
-  const seen = new Set<string>()
-  const hits: StudyHit[] = []
-  for (let i = 0; i < terms.length; i++) {
-    const term = terms[i]
-    if (!term) continue
-    for (const d of searchDictionary(term, limit, i > 0)) {
-      if (seen.has(d.slug)) continue
-      seen.add(d.slug)
-      hits.push(eastonHit(d))
-      if (hits.length >= limit) return hits
-    }
-  }
-  return hits
-}
-
 export async function searchStudy(q: string): Promise<StudyResults> {
   const n = q.trim().toLowerCase()
   const out = empty()
@@ -200,19 +346,20 @@ export async function searchStudy(q: string): Promise<StudyResults> {
   const notesTerms = commentarySearchTerms(q)
   await loadIndexes()
   const topics = searchTopics(q)
+  const chip = isChipQuery(q)
   const pinned = boostedScriptureRefs(q)
     .map((r) => findVerse(r.bookSlug, r.chapter, r.verse))
     .filter((v): v is Verse => Boolean(v))
-  const fromText = searchVerses(scriptureSearchTerms(q), 20)
+  const fromText = chip ? [] : searchVerses(scriptureSearchTerms(q), 20)
   const seen = new Set(pinned.map((v) => `${v.bookSlug}:${v.chapter}:${v.verse}`))
   const textExtra = fromText.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
   for (const v of textExtra) seen.add(`${v.bookSlug}:${v.chapter}:${v.verse}`)
   const { verses: fromNave, reading } = await versesFromNaveTopics(
     topics.slice(0, 6).map((t) => t.slug),
     q,
-    8,
+    16,
   )
-  const extra = fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
+  const extra = chip ? [] : fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
   out.scripture = [...pinned, ...textExtra, ...extra].map((v) => ({
     source: 'scripture',
     title: `${v.book} ${v.chapter}:${v.verse}`,
@@ -220,26 +367,39 @@ export async function searchStudy(q: string): Promise<StudyResults> {
     href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
   }))
   out.naveMore = reading
-  out.naves = topics.slice(0, 20).map((t) => ({
-    source: 'naves',
+  const naveVerses = fromNave.map((v) => ({
+    source: 'naves' as const,
+    title: `${v.book} ${v.chapter}:${v.verse}`,
+    detail: v.text,
+    href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
+    full: true,
+  }))
+  const naveNames = topics.slice(0, 16).map((t) => ({
+    source: 'naves' as const,
     title: t.name,
     detail: t.summary,
     href: `/topics/${t.slug}`,
   }))
-  out.scofield = searchScofield(notesTerms, 16)
-  out.henry = searchHenry(notesTerms, 12)
+  out.naves = [...naveVerses, ...naveNames]
+  let sco = searchScofield(notesTerms, 8)
+  let hen = searchHenry(notesTerms, 6)
+  sco = await hydrateScofield(sco)
+  hen = await hydrateHenry(hen)
+  const pinnedNotes = await pinTeachingNotes(q, sco, hen)
+  out.scofield = pinnedNotes.sco
+  out.henry = pinnedNotes.hen
   out.tsk = searchTsk(notesTerms, 12)
-  out.easton = searchEaston(notesTerms, 12)
+  out.easton = searchEaston(q, 6)
   return out
 }
 
 export const STUDY_LABELS: Record<StudySource, string> = {
   scripture: 'Scripture',
-  naves: 'Topics',
-  scofield: 'Notes',
-  henry: 'Commentary',
+  naves: "Nave’s",
+  scofield: 'Scofield',
+  henry: 'Matthew Henry',
   tsk: 'See also',
   easton: 'Dictionary',
 }
 
-export const STUDY_ORDER: StudySource[] = ['scripture', 'naves', 'scofield', 'henry', 'tsk', 'easton']
+export const STUDY_ORDER: StudySource[] = ['easton', 'scofield', 'henry', 'naves', 'tsk', 'scripture']

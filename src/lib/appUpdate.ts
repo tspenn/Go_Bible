@@ -16,7 +16,7 @@ function stripReloadParam() {
   if (!url.searchParams.has('_r')) return
   url.searchParams.delete('_r')
   const next = `${url.pathname}${url.search}${url.hash}`
-  window.history.replaceState({}, '', next)
+  window.history.replaceState({ app: true }, '', next)
 }
 
 export async function reloadApp() {

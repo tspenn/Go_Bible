@@ -25,12 +25,18 @@ function useLocation() {
   }))
 
   useEffect(() => {
-    const onPop = () =>
+    markAppHistory()
+    const onPop = (e: PopStateEvent) => {
+      const state = e.state ?? window.history.state
+      if (state?.app !== true) {
+        window.history.replaceState({ app: true }, '', here())
+      }
       setLoc({
         pathname: window.location.pathname,
         search: window.location.search,
         hash: window.location.hash,
       })
+    }
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [])
@@ -38,9 +44,52 @@ function useLocation() {
   return loc
 }
 
+function here() {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`
+}
+
+function appPath(to: string) {
+  try {
+    const u = new URL(to, window.location.origin)
+    if (u.origin !== window.location.origin) return null
+    return `${u.pathname}${u.search}${u.hash}`
+  } catch {
+    return null
+  }
+}
+
+function markAppHistory() {
+  if (window.history.state?.app === true) return
+  window.history.replaceState({ app: true }, '', here())
+  try {
+    const ref = document.referrer
+    const foreign = !ref || new URL(ref).origin !== window.location.origin
+    if (foreign) window.history.pushState({ app: true }, '', here())
+  } catch {
+    /* ignore bad referrer */
+  }
+}
+
+function emitLoc() {
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
+}
+
 export function navigate(to: string) {
-  window.history.pushState({}, '', to)
-  window.dispatchEvent(new PopStateEvent('popstate'))
+  const dest = appPath(to)
+  if (!dest) return
+  if (dest === here()) {
+    emitLoc()
+    return
+  }
+  window.history.pushState({ app: true }, '', dest)
+  emitLoc()
+}
+
+export function replacePath(to: string) {
+  const dest = appPath(to)
+  if (!dest) return
+  window.history.replaceState({ app: true }, '', dest)
+  emitLoc()
 }
 
 export function Link({

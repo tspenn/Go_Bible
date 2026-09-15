@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from '../App'
+import { Link, navigate, replacePath } from '../App'
 import { bookName } from '../data/kjv'
 import { featuredOneWords, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
@@ -43,9 +43,9 @@ function HitList({ hits }: { hits: StudyHit[] }) {
   return (
     <ul className="topic-list">
       {hits.map((h, i) => (
-        <li key={`${h.source}-${h.href}-${h.title}-${i}`}>
+        <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
           {h.href ? <Link to={h.href}>{h.title}</Link> : <span className="hit-title">{h.title}</span>}
-          {h.detail ? <span>{h.detail}</span> : null}
+          {h.detail ? <span className={h.full ? 'topic-note' : undefined}>{h.detail}</span> : null}
         </li>
       ))}
     </ul>
@@ -76,6 +76,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   const [suggestOpen, setSuggestOpen] = useState(false)
   const [active, setActive] = useState(0)
   const boxRef = useRef<HTMLDivElement>(null)
+  const urlTimer = useRef(0)
 
   const suggestions = useMemo(() => (q.trim() ? oneWordSuggestions(q, 8) : []), [q])
   const chips = featuredOneWords()
@@ -83,6 +84,10 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   useEffect(() => {
     setQ(fromUrl)
   }, [fromUrl])
+
+  useEffect(() => {
+    return () => window.clearTimeout(urlTimer.current)
+  }, [])
 
   useEffect(() => {
     const n = q.trim()
@@ -119,8 +124,20 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   }, [])
 
   function pick(word: string) {
-    setQ(word)
+    window.clearTimeout(urlTimer.current)
     setSuggestOpen(false)
+    setQ(word)
+    navigate(`/topics?q=${encodeURIComponent(word)}`)
+  }
+
+  function typeQuery(value: string) {
+    setQ(value)
+    setSuggestOpen(true)
+    window.clearTimeout(urlTimer.current)
+    urlTimer.current = window.setTimeout(() => {
+      const n = value.trim()
+      replacePath(n.length >= 2 ? `/topics?q=${encodeURIComponent(n)}` : '/topics')
+    }, 220)
   }
 
   const searching = q.trim().length >= 2
@@ -136,10 +153,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
         <input
           className="search-input"
           value={q}
-          onChange={(e) => {
-            setQ(e.target.value)
-            setSuggestOpen(true)
-          }}
+          onChange={(e) => typeQuery(e.target.value)}
           onFocus={() => setSuggestOpen(true)}
           onKeyDown={(e) => {
             if (!showList) return
@@ -196,13 +210,13 @@ export function TopicsPage({ search = '' }: { search?: string }) {
           {results && total === 0 ? <p>No matching verses or topics.</p> : null}
           {results
             ? STUDY_ORDER.map((src) => {
-                const more = src === 'scripture' ? results.naveMore : []
+                const more = src === 'naves' ? results.naveMore : []
                 if (results[src].length === 0 && more.length === 0) return null
                 return (
                   <section key={src}>
                     <h2>{STUDY_LABELS[src]}</h2>
                     <HitList hits={results[src]} />
-                    {src === 'scripture' ? <NaveSeeMore items={more} /> : null}
+                    {src === 'naves' ? <NaveSeeMore items={more} /> : null}
                   </section>
                 )
               })
