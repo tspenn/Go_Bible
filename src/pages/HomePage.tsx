@@ -10,7 +10,6 @@ export function HomePage() {
         <ShareArrow
           label="Share this app"
           title="Walking By Faith"
-          text={TAGLINE}
           url={sharePageUrl('/')}
         />
       </div>

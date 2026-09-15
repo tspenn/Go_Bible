@@ -81,15 +81,17 @@ export async function copyText(text: string) {
   await navigator.clipboard.writeText(text)
 }
 
-export async function shareQuote(opts: { title: string; text: string; url: string }) {
+export async function shareQuote(opts: { title: string; text?: string; url: string }) {
   if (typeof navigator.share === 'function') {
     try {
-      await navigator.share(opts)
+      const payload: ShareData = { title: opts.title, url: opts.url }
+      if (opts.text) payload.text = opts.text
+      await navigator.share(payload)
       return 'shared' as const
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return 'cancelled' as const
     }
   }
-  await copyText(`${opts.text}\n${opts.url}`)
+  await copyText(opts.text ? `${opts.text}\n${opts.url}` : opts.url)
   return 'copied' as const
 }

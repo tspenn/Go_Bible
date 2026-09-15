@@ -21,7 +21,7 @@ export function ShareArrow({
   const caption = copied && label ? 'Link copied' : label
 
   async function onShare() {
-    const result = await shareQuote({ title, text: text ?? title, url })
+    const result = await shareQuote({ title, text, url })
     if (result === 'copied') {
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1600)

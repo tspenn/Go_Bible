@@ -108,31 +108,31 @@ function HeaderSearch() {
     navigate(trimmed ? `/topics?q=${encodeURIComponent(trimmed)}` : '/topics')
   }
 
-  return (
-    <form className="header-search" onSubmit={go} role="search">
-      {open ? (
-        <input
-          ref={inputRef}
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="John 3:16 or a word"
-          aria-label="Search a verse or word"
-          enterKeyHint="search"
-          autoComplete="off"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-        />
-      ) : (
-        <button
-          type="button"
-          className="header-search-gate"
-          onClick={() => setOpen(true)}
-        >
+  if (!open) {
+    return (
+      <div className="header-search">
+        <button type="button" className="header-search-gate" onClick={() => setOpen(true)}>
           John 3:16 or a word
         </button>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <form className="header-search" onSubmit={go} role="search">
+      <input
+        ref={inputRef}
+        type="search"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="John 3:16 or a word"
+        aria-label="Search a verse or word"
+        enterKeyHint="search"
+        autoComplete="off"
+        autoCorrect="off"
+        autoCapitalize="off"
+        spellCheck={false}
+      />
       <button type="submit" className="sr-only">
         Search
       </button>
@@ -256,6 +256,28 @@ function AppShell() {
 
   useEffect(() => {
     auditScofieldPhrases()
+  }, [])
+
+  useEffect(() => {
+    let allowFocus = false
+    const arm = () => {
+      allowFocus = true
+    }
+    const dismiss = (target: EventTarget | null) => {
+      if (allowFocus) return
+      if (!(target instanceof HTMLElement)) return
+      if (target.matches('input, textarea, select, [contenteditable="true"]')) target.blur()
+    }
+    const onFocusIn = (e: FocusEvent) => dismiss(e.target)
+    document.addEventListener('pointerdown', arm, true)
+    document.addEventListener('keydown', arm, true)
+    document.addEventListener('focusin', onFocusIn, true)
+    dismiss(document.activeElement)
+    return () => {
+      document.removeEventListener('pointerdown', arm, true)
+      document.removeEventListener('keydown', arm, true)
+      document.removeEventListener('focusin', onFocusIn, true)
+    }
   }, [])
 
   return (
