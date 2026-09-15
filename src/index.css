@@ -336,6 +336,32 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 .share-arrow.copied {
   color: var(--gold);
 }
+.share-arrow.labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: auto;
+  height: auto;
+  margin: 0.1rem 0 1.35rem;
+  padding: 0.65rem 1.15rem;
+  border: 0;
+  background: var(--blue);
+  color: var(--cream);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.share-arrow.labeled svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin: 0;
+}
+.share-arrow.labeled:hover,
+.share-arrow.labeled:focus-visible,
+.share-arrow.labeled.copied {
+  color: var(--cream);
+  background: var(--gold);
+}
 .notes-sheet-tools .share-arrow {
   width: 2.1rem;
   height: 2.1rem;
