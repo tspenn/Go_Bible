@@ -11,11 +11,10 @@ import {
   removeNote,
   toggleBookmark,
   useMarks,
-  type Highlight,
 } from '../data/marks'
-import { findVerse } from '../data/kjv'
+import { bookName } from '../data/kjv'
 import { useAuth } from '../lib/auth'
-import { startPassagesSpeak, useSpeak } from '../lib/speak'
+import { startFromVerseSpeak, useSpeak } from '../lib/speak'
 
 const PEN_ORDER = [
   'yellow',
@@ -29,27 +28,6 @@ const PEN_ORDER = [
   'lavender',
   'gray',
 ] as const
-
-function passageFromHighlight(h: Highlight) {
-  const v = findVerse(h.bookSlug, h.chapter, h.verse)
-  if (!v) return []
-  return [{ cite: formatMarkRef(h.bookSlug, h.chapter, h.verse), text: v.text }]
-}
-
-function passagesFromHighlights(highlights: Highlight[], color?: string) {
-  const seen = new Set<string>()
-  const out: { cite: string; text: string }[] = []
-  const colors = color ? [color] : PEN_ORDER
-  for (const id of colors) {
-    for (const h of highlights.filter((row) => row.color === id)) {
-      const key = `${h.bookSlug}:${h.chapter}:${h.verse}`
-      if (seen.has(key)) continue
-      seen.add(key)
-      out.push(...passageFromHighlight(h))
-    }
-  }
-  return out
-}
 
 export function NotebookPage() {
   const { ready, user } = useAuth()
@@ -161,39 +139,15 @@ export function NotebookPage() {
         <p>No highlights yet. Select two or more words, then choose Highlight.</p>
       )}
       {marks.highlights.length > 0 && speak.supported ? (
-        <ListenControl
-          sessionKey="notebook-highlights"
-          label="Listen to highlights"
-          onStart={() =>
-            startPassagesSpeak({
-              intro: 'Highlights.',
-              passages: passagesFromHighlights(marks.highlights),
-            })
-          }
-        />
+        <ListenControl sessionKey="notebook-highlights" />
       ) : null}
       {PEN_ORDER.map((id) => {
           const rows = marks.highlights.filter((h) => h.color === id)
           if (rows.length === 0) return null
           const label = penLabel(id as (typeof rows)[0]['color'], marks.penNames)
-          const penPassages = passagesFromHighlights(rows, id)
           return (
             <div key={id}>
               <h3 className="pen-heading">{label}</h3>
-              {speak.supported && penPassages.length > 1 ? (
-                <button
-                  type="button"
-                  className="listen-btn quiet"
-                  onClick={() =>
-                    startPassagesSpeak({
-                      intro: `${label} highlights.`,
-                      passages: penPassages,
-                    })
-                  }
-                >
-                  Listen to {label}
-                </button>
-              ) : null}
               <ul className="topic-list">
                 {rows.map((h) => (
                   <li key={h.id}>
@@ -205,9 +159,16 @@ export function NotebookPage() {
                         <button
                           type="button"
                           className="mark-back"
-                          onClick={() => void startPassagesSpeak({ passages: passageFromHighlight(h) })}
+                          onClick={() =>
+                            void startFromVerseSpeak({
+                              bookSlug: h.bookSlug,
+                              bookName: bookName(h.bookSlug),
+                              chapter: h.chapter,
+                              fromVerse: h.verse,
+                            })
+                          }
                         >
-                          Listen
+                          Start listening here
                         </button>
                       ) : null}
                       <button type="button" className="mark-back" onClick={() => void removeHighlight(h.id)}>

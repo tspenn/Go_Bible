@@ -1,13 +1,18 @@
+import { useEffect } from 'react'
 import { Link } from '../App'
 import { PEN_COLORS, penLabel, setPenName, useMarks } from '../data/marks'
 import { reloadApp } from '../lib/appUpdate'
 import { useAuth } from '../lib/auth'
-import { setListenGender, useListenGender } from '../lib/speak'
+import { setListenGender, useListenGender, warmupVoices } from '../lib/speak'
 
 export function SettingsPage() {
   const { user } = useAuth()
   const marks = useMarks()
   const listenGender = useListenGender()
+
+  useEffect(() => {
+    warmupVoices()
+  }, [])
 
   return (
     <article className="page">
@@ -53,7 +58,7 @@ export function SettingsPage() {
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
         <li>See also lists original TSK cross-references in green. Hover or press a link for “Go to …” then tap to open that verse. The first six links show; tap More references for the rest.</li>
         <li>Blue dotted names are Easton or Smith dictionary entries.</li>
-        <li>Listen to this chapter reads the Go-Bible text aloud. Voice, Notebook highlights, Pause, and Stop are under Listen below.</li>
+        <li>Listen to this chapter reads the Go-Bible text aloud. Male or female, Pause, and Stop are under Listen below.</li>
       </ul>
 
       <h2>Your marks</h2>
@@ -65,7 +70,7 @@ export function SettingsPage() {
         <li>Your notes show a ★ (or 1, 2, 3 if you have more than one on that verse). They are not Scofield letters.</li>
         <li>Tap ★ to open My note in the panel.</li>
         <li>You stay signed in across tab close, browser close, and iPad sleep. Sign out only if you tap Sign out.</li>
-        <li>In Notebook, choose Download text or Download Word for a Sunday School file of your verses, marks, and notes. Listen to highlights reads only those marked verses, not the rest of the chapter.</li>
+        <li>In Notebook, choose Download text or Download Word for a Sunday School file of your verses, marks, and notes. Start listening here on a highlight begins at that verse and keeps reading until you Pause or Stop.</li>
       </ul>
       <p>
         {user ? (
@@ -83,8 +88,8 @@ export function SettingsPage() {
         washed in light blue.
       </p>
       <p>
-        In Notebook, under Highlights by pen, Listen to highlights reads only those marked verses — not
-        the rest of each chapter. Listen beside a highlight reads that verse alone.
+        In Notebook, Start listening here on a highlight begins at that verse and keeps reading. Pause
+        or Stop when you are done.
       </p>
       <p className="listen-gender">
         <button

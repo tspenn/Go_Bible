@@ -6,6 +6,7 @@ import {
   startChapterSpeak,
   stopSpeak,
   useSpeak,
+  warmupVoices,
 } from '../lib/speak'
 
 export function ListenControl({
@@ -13,11 +14,15 @@ export function ListenControl({
   onStart,
   sessionKey,
 }: {
-  label: string
-  onStart: () => void | Promise<void>
+  label?: string
+  onStart?: () => void | Promise<void>
   sessionKey: string
 }) {
   const speak = useSpeak()
+
+  useEffect(() => {
+    warmupVoices()
+  }, [])
 
   useEffect(() => {
     return () => stopSpeak()
@@ -26,16 +31,17 @@ export function ListenControl({
   if (!speak.supported) return null
 
   const listening = speak.status !== 'idle'
+  if (!listening && !label) return null
 
   return (
     <>
       {listening ? <div className="listen-row-slot" aria-hidden="true" /> : null}
       <div className={`listen-row${listening ? ' listening' : ''}`}>
-        {speak.status === 'idle' && (
+        {speak.status === 'idle' && label && onStart ? (
           <button type="button" className="listen-btn" onClick={() => void onStart()}>
             {label}
           </button>
-        )}
+        ) : null}
         {speak.status === 'playing' && (
           <button type="button" className="listen-btn" onClick={pauseSpeak}>
             Pause
@@ -50,9 +56,6 @@ export function ListenControl({
           <button type="button" className="listen-btn quiet" onClick={stopSpeak}>
             Stop
           </button>
-        )}
-        {speak.voiceName && listening && (
-          <span className="listen-voice">{speak.voiceName}</span>
         )}
       </div>
     </>

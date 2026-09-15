@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { Verse } from '../data/kjv'
+import { nextChapter, versesInChapter, type Verse } from '../data/kjv'
 
 export type SpeakStatus = 'idle' | 'playing' | 'paused'
 export type ListenGender = 'male' | 'female'
@@ -23,6 +23,7 @@ let index = 0
 let queue: { verse: number | null; text: string }[] = []
 let current: SpeechSynthesisUtterance | null = null
 let picked: SpeechSynthesisVoice | null = null
+let follow: { bookSlug: string; chapter: number } | null = null
 
 function emit() {
   listeners.forEach((fn) => fn())
@@ -109,8 +110,9 @@ function isGoogleUsEnglish(voice: SpeechSynthesisVoice) {
 
 function namedGender(voice: SpeechSynthesisVoice): ListenGender | null {
   const blob = voiceBlob(voice)
-  if (/\bfemale\b/.test(blob) || isGoogleUsEnglish(voice)) return 'female'
-  if (/\bmale\b/.test(blob)) return 'male'
+  if (/\bfemale\b/.test(blob) || /x-sfg|x-tpf|x-tfb|sm_f/.test(blob)) return 'female'
+  if (isGoogleUsEnglish(voice) && !/\bmale\b/.test(blob)) return 'female'
+  if (/\bmale\b/.test(blob) || /x-iol|x-tpd|x-gid|sm_m/.test(blob)) return 'male'
   if (FEMALE_HINTS.some((h) => blob.includes(h))) return 'female'
   if (MALE_HINTS.some((h) => blob.includes(h))) return 'male'
   return null
@@ -132,9 +134,12 @@ function pickUsVoice(voices: SpeechSynthesisVoice[], want: ListenGender) {
   const english = voices.filter((v) => v.lang.toLowerCase().startsWith('en'))
   const pool = english.length ? english : voices
   if (!pool.length) return null
-  let best = pool[0]
+  const matching = pool.filter((v) => namedGender(v) === want)
+  const unknown = pool.filter((v) => namedGender(v) == null)
+  const candidates = matching.length ? matching : unknown.length ? unknown : pool
+  let best = candidates[0]
   let bestScore = -Infinity
-  for (const voice of pool) {
+  for (const voice of candidates) {
     const n = scoreVoice(voice, want)
     if (n > bestScore) {
       best = voice
@@ -144,11 +149,21 @@ function pickUsVoice(voices: SpeechSynthesisVoice[], want: ListenGender) {
   return best ?? null
 }
 
+function liveVoice() {
+  if (!picked) return null
+  const list = speechSynthesis.getVoices()
+  return (
+    list.find((v) => v.voiceURI === picked!.voiceURI && v.name === picked!.name) ??
+    list.find((v) => v.voiceURI === picked!.voiceURI) ??
+    picked
+  )
+}
+
 function utterRate(voice: SpeechSynthesisVoice | null) {
   if (listenGender === 'female') return 0.7
   const name = voice?.name.toLowerCase() ?? ''
-  if (name.includes('google')) return 0.82
-  return 0.9
+  if (name.includes('google')) return 1
+  return 1.08
 }
 
 const GENDER_KEY = 'go-bible-listen-gender'
@@ -194,16 +209,28 @@ export function useListenGender() {
 
 function loadVoices(): Promise<SpeechSynthesisVoice[]> {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return Promise.resolve([])
-  const now = speechSynthesis.getVoices()
-  if (now.length) return Promise.resolve(now)
   return new Promise((resolve) => {
+    let settled = false
     const finish = () => {
-      speechSynthesis.removeEventListener('voiceschanged', finish)
+      if (settled) return
+      settled = true
+      speechSynthesis.removeEventListener('voiceschanged', onChange)
       resolve(speechSynthesis.getVoices())
     }
-    speechSynthesis.addEventListener('voiceschanged', finish)
-    window.setTimeout(finish, 700)
+    const onChange = () => {
+      if (speechSynthesis.getVoices().length > 1) window.setTimeout(finish, 50)
+    }
+    speechSynthesis.addEventListener('voiceschanged', onChange)
+    if (speechSynthesis.getVoices().length > 1) {
+      window.setTimeout(finish, 50)
+      return
+    }
+    window.setTimeout(finish, 1500)
   })
+}
+
+export function warmupVoices() {
+  void loadVoices()
 }
 
 export function stopSpeak() {
@@ -215,6 +242,7 @@ export function stopSpeak() {
   }
   queue = []
   index = 0
+  follow = null
   if (typeof window !== 'undefined' && 'speechSynthesis' in window) speechSynthesis.cancel()
   setState({ status: 'idle', verse: null })
 }
@@ -231,21 +259,59 @@ export function resumeSpeak() {
   setState({ status: 'playing' })
 }
 
+function chapterItems(
+  bookName: string,
+  chapter: number,
+  verses: Pick<Verse, 'verse' | 'text'>[],
+  fromVerse: number,
+) {
+  const from = fromVerse > 1 ? fromVerse : 1
+  const slice = verses.filter((v) => v.verse >= from)
+  const intro =
+    from > 1
+      ? `${bookName}, chapter ${chapter}, from verse ${from}.`
+      : `${bookName}, chapter ${chapter}.`
+  return [{ verse: null, text: intro }, ...slice.map((v) => ({ verse: v.verse, text: v.text }))]
+}
+
+function appendNextChapter() {
+  if (!follow) return false
+  const nxt = nextChapter(follow.bookSlug, follow.chapter)
+  if (!nxt) {
+    follow = null
+    return false
+  }
+  const verses = versesInChapter(nxt.bookSlug, nxt.chapter)
+  if (!verses.length) {
+    follow = nxt
+    return appendNextChapter()
+  }
+  follow = { bookSlug: nxt.bookSlug, chapter: nxt.chapter }
+  queue = queue.concat(chapterItems(nxt.bookName, nxt.chapter, verses, 1))
+  return true
+}
+
 function speakNext(token: number) {
   if (token !== gen) return
   if (index >= queue.length) {
+    if (appendNextChapter()) {
+      speakNext(token)
+      return
+    }
     current = null
     queue = []
     index = 0
+    follow = null
     setState({ status: 'idle', verse: null })
     return
   }
   const item = queue[index]
+  const voice = liveVoice()
   const utter = new SpeechSynthesisUtterance(item.text)
-  utter.voice = picked
-  utter.lang = picked?.lang || 'en-US'
-  utter.rate = utterRate(picked)
+  utter.lang = voice?.lang || 'en-US'
+  utter.rate = utterRate(voice)
   utter.pitch = 1
+  utter.voice = voice
   utter.onend = () => {
     if (token !== gen) return
     index += 1
@@ -260,7 +326,7 @@ function speakNext(token: number) {
   setState({
     status: 'playing',
     verse: item.verse,
-    voiceName: picked?.name ?? null,
+    voiceName: voice?.name ?? null,
   })
   window.setTimeout(() => {
     if (token !== gen) return
@@ -299,24 +365,21 @@ export async function startChapterSpeak(opts: {
   verses: Pick<Verse, 'verse' | 'text'>[]
   fromVerse?: number
 }) {
+  follow = null
   const from = opts.fromVerse && opts.fromVerse > 1 ? opts.fromVerse : 1
-  const slice = opts.verses.filter((v) => v.verse >= from)
-  const intro =
-    from > 1
-      ? `${opts.bookName}, chapter ${opts.chapter}, from verse ${from}.`
-      : `${opts.bookName}, chapter ${opts.chapter}.`
-  await beginSpeak([{ verse: null, text: intro }, ...slice.map((v) => ({ verse: v.verse, text: v.text }))])
+  await beginSpeak(chapterItems(opts.bookName, opts.chapter, opts.verses, from))
 }
 
-export async function startPassagesSpeak(opts: {
-  intro?: string
-  passages: { cite: string; text: string }[]
+export async function startFromVerseSpeak(opts: {
+  bookSlug: string
+  bookName: string
+  chapter: number
+  fromVerse: number
 }) {
-  if (!opts.passages.length) return
-  await beginSpeak([
-    ...(opts.intro ? [{ verse: null, text: opts.intro }] : []),
-    ...opts.passages.map((p) => ({ verse: null, text: `${p.cite}. ${p.text}` })),
-  ])
+  const verses = versesInChapter(opts.bookSlug, opts.chapter)
+  if (!verses.length) return
+  follow = { bookSlug: opts.bookSlug, chapter: opts.chapter }
+  await beginSpeak(chapterItems(opts.bookName, opts.chapter, verses, opts.fromVerse))
 }
 
 export function getSpeak() {
