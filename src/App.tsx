@@ -250,7 +250,8 @@ function Dock({ routeName }: { routeName: Route['name'] }) {
         rel="noopener noreferrer"
         title={MAGAZINE_BLURB}
       >
-        {MAGAZINE_LABEL}
+        <span className="dock-mag-full">{MAGAZINE_LABEL}</span>
+        <span className="dock-mag-short">Magazine</span>
       </a>
       <a href={STORE_URL} target="_blank" rel="noopener noreferrer">
         Store
@@ -324,7 +325,7 @@ function AppShell() {
       >
         <Dock routeName={route.name} />
         <footer>
-          <p>
+          <p className="foot-mag">
             <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer" title={MAGAZINE_BLURB}>
               A companion to Walking By Faith Magazine
             </a>
@@ -333,10 +334,12 @@ function AppShell() {
             <Link to="/settings">How to use</Link>
             {' · '}
             <TranslateFooterLink />
-            {' · '}
-            © 2026 Skyland Publishing – Skyland Reach LLC
+            <span className="foot-copy">
+              {' · '}
+              © 2026 Skyland Publishing – Skyland Reach LLC
+            </span>
           </p>
-          <p className="fine">
+          <p className="fine foot-mail">
             <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>
           </p>
         </footer>

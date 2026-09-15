@@ -1213,6 +1213,26 @@ a.tsk-go:active {
 }
 
 @media (max-width: 799px) {
+  :root {
+    --dock-h: 2.7rem;
+    --footer-h: 1.85rem;
+  }
+  .dock a {
+    font-size: 0.72rem;
+    padding: 0.2rem 0.12rem;
+    line-height: 1.1;
+  }
+  .dock a.dock-mag {
+    font-size: 0.72rem;
+  }
+  footer {
+    padding: 0.28rem 0.65rem calc(0.32rem + env(safe-area-inset-bottom, 0));
+  }
+  footer p { margin: 0; }
+  footer .foot-mag,
+  footer .foot-copy,
+  footer .foot-mail { display: none; }
+  footer .fine { font-size: 0.72rem; opacity: 0.9; white-space: nowrap; }
   .masthead {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
@@ -1418,11 +1438,15 @@ body { top: 0 !important; position: static !important; }
   line-height: 1.15;
   letter-spacing: 0;
 }
+.dock-mag-full { display: none; }
+.dock-mag-short { display: inline; }
 
 @media (min-width: 800px) {
   :root {
     --dock-h: 5.4rem;
   }
+  .dock-mag-full { display: inline; }
+  .dock-mag-short { display: none; }
   .dock {
     grid-template-columns: repeat(5, minmax(7.5rem, 12rem));
     justify-content: center;
