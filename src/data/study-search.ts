@@ -65,19 +65,26 @@ const CHIP_STARTER_ID: Record<string, string> = {
   spirit: 'holy-spirit',
 }
 
-/** Easton/Smith headwords when the chip itself is not a dictionary name. */
-const CHIP_DICT_SLUGS: Record<string, string[]> = {
-  jesus: ['messiah', 'redeemer', 'nazarene', 'word-of-god'],
-  god: ['word-of-god'],
-  gospel: ['messiah', 'redeemer'],
-  church: ['christian', 'apostle'],
-  spirit: ['spirit'],
-  judgment: ['judge'],
-  judgement: ['judge'],
-  forgiveness: ['atonement'],
-  resurrection: ['redeemer'],
-  repentance: ['atonement'],
-}
+/** Scofield 1917 Summary notes: the chain-end write-up for the whole topic, not a word-hit. */
+const CHIP_SCOFIELD_SUMMARY: Record<string, { bookSlug: string; chapter: number; verse: number; heading: string; title: string }[]> =
+  {
+    jesus: [{ bookSlug: 'john', chapter: 20, verse: 28, heading: 'My Lord and My God', title: 'Deity of Jesus Christ' }],
+    salvation: [{ bookSlug: 'romans', chapter: 1, verse: 16, heading: 'salvation', title: 'Salvation' }],
+    faith: [{ bookSlug: 'hebrews', chapter: 11, verse: 39, heading: 'faith', title: 'Faith' }],
+    church: [{ bookSlug: 'hebrews', chapter: 12, verse: 23, heading: 'church', title: 'Church (true)' }],
+    god: [{ bookSlug: 'malachi', chapter: 3, verse: 18, heading: 'God', title: 'God' }],
+    gospel: [{ bookSlug: 'revelation', chapter: 14, verse: 6, heading: 'gospel', title: 'Gospel' }],
+    prayer: [{ bookSlug: 'luke', chapter: 11, verse: 1, heading: 'teach us to pray', title: 'Prayer' }],
+    grace: [{ bookSlug: 'john', chapter: 1, verse: 17, heading: 'grace', title: 'Grace' }],
+    love: [{ bookSlug: '2-john', chapter: 1, verse: 5, heading: 'that we love one another', title: 'Law of Christ' }],
+    atonement: [{ bookSlug: 'leviticus', chapter: 16, verse: 6, heading: 'Atonement', title: 'Atonement' }],
+    forgiveness: [{ bookSlug: 'matthew', chapter: 26, verse: 28, heading: 'remission', title: 'Forgiveness' }],
+    resurrection: [{ bookSlug: '1-corinthians', chapter: 15, verse: 52, heading: 'raised', title: 'Resurrection' }],
+    judgment: [{ bookSlug: 'revelation', chapter: 20, verse: 12, heading: 'judged', title: 'Judgment' }],
+    judgement: [{ bookSlug: 'revelation', chapter: 20, verse: 12, heading: 'judged', title: 'Judgment' }],
+    repentance: [{ bookSlug: 'acts', chapter: 17, verse: 30, heading: 'Repent', title: 'Repentance' }],
+    spirit: [{ bookSlug: 'acts', chapter: 2, verse: 4, heading: 'Holy Ghost', title: 'Holy Spirit' }],
+  }
 
 function teachingStarter(q: string): StarterTopic | undefined {
   const n = q.trim().toLowerCase()
@@ -164,11 +171,10 @@ function dictRank(d: DictEntry, n: string) {
   return 9
 }
 
-function searchEaston(q: string, limit: number): StudyHit[] {
+function searchEaston(q: string, limit: number, exact = false): StudyHit[] {
   const n = q.trim().toLowerCase()
   if (n.length < 2) return []
-  const extraSlugs = CHIP_DICT_SLUGS[n] ?? []
-  const ranked = DICTIONARY.map((d) => ({ d, rank: dictRank(d, n) })).filter((x) => x.rank < 9)
+  const ranked = DICTIONARY.map((d) => ({ d, rank: dictRank(d, n) })).filter((x) => x.rank < (exact ? 1 : 9))
   ranked.sort((a, b) => a.rank - b.rank || a.d.name.localeCompare(b.d.name))
   const hits: StudyHit[] = []
   const seen = new Set<string>()
@@ -178,12 +184,20 @@ function searchEaston(q: string, limit: number): StudyHit[] {
     hits.push(eastonHit(d))
     if (hits.length >= limit) return hits
   }
-  for (const slug of extraSlugs) {
-    const d = DICTIONARY.find((e) => e.slug === slug)
-    if (!d || seen.has(d.slug)) continue
-    seen.add(d.slug)
-    hits.push(eastonHit(d))
-    if (hits.length >= limit) break
+  return hits
+}
+
+async function chipScofieldSummaries(q: string): Promise<StudyHit[]> {
+  const rows = CHIP_SCOFIELD_SUMMARY[q.trim().toLowerCase()]
+  if (!rows?.length) return []
+  await Promise.all(rows.map((r) => ensureScofieldBook(r.bookSlug)))
+  const hits: StudyHit[] = []
+  for (const r of rows) {
+    const notes = notesForVerse(r.bookSlug, r.chapter, r.verse)
+    const want = r.heading.toLowerCase()
+    const match = notes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want)
+    if (!match) continue
+    hits.push(scoHit(r.title, match.bookSlug, match.chapter, match.verse, match.body, true))
   }
   return hits
 }
@@ -305,24 +319,37 @@ async function hydrateHenry(hits: StudyHit[]): Promise<StudyHit[]> {
   })
 }
 
-async function pinTeachingNotes(q: string, sco: StudyHit[], hen: StudyHit[]) {
+async function pinTeachingNotes(
+  q: string,
+  sco: StudyHit[],
+  hen: StudyHit[],
+  pin: { sco?: boolean; hen?: boolean } = {},
+) {
   const teach = teachingStarter(q)
   if (!teach) return { sco, hen }
+  const pinSco = pin.sco !== false
+  const pinHen = pin.hen !== false
   const { bookSlug, chapter, verse, label } = teach.scofield
   await Promise.all([ensureScofieldBook(bookSlug), ensureHenryBook(bookSlug)])
-  const want = label.toLowerCase()
-  const scoNotes = notesForVerse(bookSlug, chapter, verse)
-  const scoPick =
-    scoNotes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want) ?? scoNotes[0]
-  if (scoPick) {
-    const hit = scoHit(scoPick.heading || scoPick.kjvPhrase, bookSlug, chapter, verse, scoPick.body, true)
-    sco = [hit, ...sco.filter((h) => h.href !== hit.href)]
+  if (pinSco) {
+    const want = label.toLowerCase()
+    const scoNotes = notesForVerse(bookSlug, chapter, verse)
+    const scoPick =
+      scoNotes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want) ??
+      scoNotes.find((n) => !/^(writer|date|theme|title)$/i.test(n.heading || '')) ??
+      scoNotes[0]
+    if (scoPick) {
+      const hit = scoHit(scoPick.heading || scoPick.kjvPhrase, bookSlug, chapter, verse, scoPick.body, true)
+      sco = [hit, ...sco.filter((h) => h.href !== hit.href)]
+    }
   }
-  const henNotes = henryNotesForVerse(bookSlug, chapter, verse).filter((n) => n.range !== 'intro')
-  if (henNotes[0]) {
-    const n = henNotes[0]
-    const hit = henryHit(n.bookSlug, n.chapter, n.verse, n.range ?? '', n.body, true)
-    hen = [hit, ...hen.filter((h) => h.href !== hit.href)]
+  if (pinHen) {
+    const henNotes = henryNotesForVerse(bookSlug, chapter, verse).filter((n) => n.range !== 'intro')
+    if (henNotes[0]) {
+      const n = henNotes[0]
+      const hit = henryHit(n.bookSlug, n.chapter, n.verse, n.range ?? '', n.body, true)
+      hen = [hit, ...hen.filter((h) => h.href !== hit.href)]
+    }
   }
   return { sco, hen }
 }
@@ -355,7 +382,11 @@ export async function searchStudy(q: string): Promise<StudyResults> {
   const textExtra = fromText.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
   for (const v of textExtra) seen.add(`${v.bookSlug}:${v.chapter}:${v.verse}`)
   const { verses: fromNave, reading } = await versesFromNaveTopics(
-    topics.slice(0, 6).map((t) => t.slug),
+    (() => {
+      const teach = teachingStarter(q)
+      if (chip && teach) return [teach.naveSlug]
+      return topics.slice(0, 6).map((t) => t.slug)
+    })(),
     q,
     16,
   )
@@ -381,6 +412,15 @@ export async function searchStudy(q: string): Promise<StudyResults> {
     href: `/topics/${t.slug}`,
   }))
   out.naves = [...naveVerses, ...naveNames]
+  if (chip) {
+    const summaries = await chipScofieldSummaries(q)
+    const pinnedNotes = await pinTeachingNotes(q, summaries, [], { sco: summaries.length === 0 })
+    out.scofield = pinnedNotes.sco
+    out.henry = pinnedNotes.hen
+    out.tsk = []
+    out.easton = searchEaston(q, 2, true)
+    return out
+  }
   let sco = searchScofield(notesTerms, 8)
   let hen = searchHenry(notesTerms, 6)
   sco = await hydrateScofield(sco)
