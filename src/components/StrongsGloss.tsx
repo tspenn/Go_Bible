@@ -404,19 +404,32 @@ function CardShell({
   const card = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    function onDoc(e: Event) {
-      if (card.current && !card.current.contains(e.target as Node)) onClose()
+    function insideCard(target: EventTarget | null, clientX?: number, clientY?: number) {
+      const el = card.current
+      if (!el) return false
+      if (target instanceof Node && el.contains(target)) return true
+      if (clientX == null || clientY == null) return false
+      const r = el.getBoundingClientRect()
+      return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom
+    }
+    function onDoc(e: globalThis.PointerEvent) {
+      if (insideCard(e.target, e.clientX, e.clientY)) return
+      onClose()
+    }
+    function onScroll(e: Event) {
+      if (insideCard(e.target)) return
+      onClose()
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('pointerdown', onDoc)
     document.addEventListener('keydown', onKey)
-    window.addEventListener('scroll', onClose, true)
+    window.addEventListener('scroll', onScroll, true)
     return () => {
       document.removeEventListener('pointerdown', onDoc)
       document.removeEventListener('keydown', onKey)
-      window.removeEventListener('scroll', onClose, true)
+      window.removeEventListener('scroll', onScroll, true)
     }
   }, [onClose])
 
