@@ -124,6 +124,7 @@ function Screen({
 }) {
   switch (route.name) {
     case 'home':
+    case 'bible':
       return <HomePage />
     case 'topics':
       return <TopicsPage search={search} />
@@ -186,7 +187,7 @@ function MastNav() {
 }
 
 function bibleOn(name: Route['name']) {
-  return name === 'bible' || name === 'book' || name === 'chapter' || name === 'verse'
+  return name === 'home' || name === 'bible' || name === 'book' || name === 'chapter' || name === 'verse'
 }
 
 function topicsOn(name: Route['name']) {
@@ -196,8 +197,8 @@ function topicsOn(name: Route['name']) {
 function Dock({ routeName }: { routeName: Route['name'] }) {
   return (
     <nav className="dock" aria-label="Main">
-      <Link to="/bible" className={bibleOn(routeName) ? 'on' : undefined} aria-current={bibleOn(routeName) ? 'page' : undefined}>
-        Bible
+      <Link to="/" className={bibleOn(routeName) ? 'on' : undefined} aria-current={bibleOn(routeName) ? 'page' : undefined}>
+        Home
       </Link>
       <Link to="/about" className={routeName === 'about' ? 'on' : undefined} aria-current={routeName === 'about' ? 'page' : undefined}>
         About

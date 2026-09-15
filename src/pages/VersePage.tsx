@@ -372,7 +372,7 @@ export function VersePage({
           {bookSlug} {chapter}
           {verse ? `:${verse}` : ''} is not in the Go-Bible text.
         </p>
-        <Link to="/bible">Back to Bible</Link>
+        <Link to="/">Home</Link>
       </article>
     )
   }
@@ -382,6 +382,8 @@ export function VersePage({
       <div className="reader">
         <BookPicker selectedBook={bookSlug} />
         <p className="reader-jump">
+          <Link to="/">Home</Link>
+          {' · '}
           <Link to={`/bible/${bookSlug}`}>All chapters</Link>
         </p>
         <div className="page-head">

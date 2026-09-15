@@ -12,7 +12,7 @@ export function BookPage({ bookSlug }: { bookSlug: string }) {
       <article className="page">
         <h1>Book not found</h1>
         <p className="lead">That name is not in this Bible.</p>
-        <Link to="/bible">Back to Bible</Link>
+        <Link to="/">Home</Link>
       </article>
     )
   }
@@ -22,7 +22,7 @@ export function BookPage({ bookSlug }: { bookSlug: string }) {
   return (
     <article className="page">
       <p className="crumb">
-        <Link to="/bible">Bible</Link>
+        <Link to="/">Home</Link>
       </p>
       <h1>{book.name}</h1>
       <p className="chapter-source">{CHAPTER_TITLE_SOURCE}</p>

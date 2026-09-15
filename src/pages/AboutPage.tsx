@@ -43,7 +43,7 @@ export function AboutPage() {
       <p>
         <Link to="/settings">How to use the Bible</Link>
         {' · '}
-        <Link to="/bible">Open the Bible</Link>
+        <Link to="/">Home</Link>
       </p>
       <p>
         <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer">
