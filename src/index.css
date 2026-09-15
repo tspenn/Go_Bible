@@ -359,31 +359,33 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
 .share-arrow.copied {
   color: var(--gold);
 }
-.share-arrow.labeled {
-  display: inline-flex;
+.share-arrow.home-share {
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  width: auto;
+  gap: 0.4rem;
+  width: 100%;
   height: auto;
-  margin: 0.1rem 0 1.35rem;
-  padding: 0.65rem 1.15rem;
-  border: 0;
-  background: var(--blue);
-  color: var(--cream);
+  margin: 0 0 0.5rem;
+  padding: 0.65rem 1rem;
+  border: 1px solid #d9d3c9;
+  background: #fff;
+  color: var(--blue-deep);
   font: inherit;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 400;
 }
-.share-arrow.labeled svg {
-  width: 1.25rem;
-  height: 1.25rem;
+.share-arrow.home-share svg {
+  width: 1.1rem;
+  height: 1.1rem;
   margin: 0;
 }
-.share-arrow.labeled:hover,
-.share-arrow.labeled:focus-visible,
-.share-arrow.labeled.copied {
-  color: var(--cream);
-  background: var(--gold);
+.share-arrow.home-share:hover,
+.share-arrow.home-share:focus-visible {
+  color: var(--gold);
+  background: #fff;
+}
+.share-arrow.home-share.copied {
+  color: var(--gold);
 }
 .notes-sheet-tools .share-arrow {
   width: 2.1rem;

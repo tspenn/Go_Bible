@@ -31,7 +31,7 @@ export function ShareArrow({
   return (
     <button
       type="button"
-      className={`share-arrow${label ? ' labeled' : ''}${copied ? ' copied' : ''}`}
+      className={`share-arrow${label ? ' home-share' : ''}${copied ? ' copied' : ''}`}
       onClick={() => void onShare()}
       aria-label={copied ? 'Copied link' : label ?? 'Share'}
       title={copied ? 'Copied link' : label ?? 'Share'}

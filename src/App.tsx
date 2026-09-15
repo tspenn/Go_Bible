@@ -15,6 +15,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { AboutPage } from './pages/AboutPage'
 import { LoginPage } from './pages/LoginPage'
 import { TranslateControl, TranslateFooterLink } from './components/TranslateControl'
+import { MastShare } from './components/ShareArrow'
 import { reloadApp, useAppUpdate } from './lib/appUpdate'
 
 function useLocation() {
@@ -168,6 +169,7 @@ function MastNav() {
   return (
     <nav className="mast-nav" aria-label="Account">
       <TranslateControl />
+      <MastShare />
       <button type="button" className="mast-auth" onClick={() => void reloadApp()}>
         Refresh
       </button>
