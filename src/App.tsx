@@ -242,7 +242,11 @@ function AppShell() {
       <div className="bottom-chrome">
         <Dock routeName={route.name} />
         <footer>
-          <p>A companion to Walking By Faith Magazine</p>
+          <p>
+            <a href={MAGAZINE_URL} target="_blank" rel="noopener noreferrer" title={MAGAZINE_BLURB}>
+              A companion to Walking By Faith Magazine
+            </a>
+          </p>
           <p className="fine">
             <Link to="/settings">How to use</Link>
             {' · '}
