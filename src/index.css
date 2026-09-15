@@ -103,7 +103,8 @@ button.text-link {
   max-width: 24rem;
   margin-left: auto;
 }
-.header-search input {
+.header-search input,
+.header-search-gate {
   width: 100%;
   padding: 0.45rem 0.8rem;
   border: 0;
@@ -111,6 +112,11 @@ button.text-link {
   color: var(--text);
   font: inherit;
   font-size: 0.95rem;
+}
+.header-search-gate {
+  color: #5c564c;
+  text-align: left;
+  cursor: text;
 }
 
 .sr-only {

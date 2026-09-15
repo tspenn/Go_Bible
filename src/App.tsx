@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
@@ -83,7 +83,19 @@ export function Link({
 }
 
 function HeaderSearch() {
+  const loc = useLocation()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    setOpen(false)
+  }, [loc.pathname, loc.search])
+
+  useEffect(() => {
+    if (!open) return
+    inputRef.current?.focus()
+  }, [open])
 
   function go(e: FormEvent) {
     e.preventDefault()
@@ -98,14 +110,29 @@ function HeaderSearch() {
 
   return (
     <form className="header-search" onSubmit={go} role="search">
-      <input
-        type="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="John 3:16 or a word"
-        aria-label="Search a verse or word"
-        enterKeyHint="search"
-      />
+      {open ? (
+        <input
+          ref={inputRef}
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="John 3:16 or a word"
+          aria-label="Search a verse or word"
+          enterKeyHint="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+        />
+      ) : (
+        <button
+          type="button"
+          className="header-search-gate"
+          onClick={() => setOpen(true)}
+        >
+          John 3:16 or a word
+        </button>
+      )}
       <button type="submit" className="sr-only">
         Search
       </button>

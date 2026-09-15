@@ -30,12 +30,8 @@ export function TranslateControl() {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
-    loadGoogleTranslate()
-  }, [])
-
-  useEffect(() => {
     if (!open) return
-    mountGoogleTranslate()
+    loadGoogleTranslate()
     const wait = window.setInterval(() => {
       mountGoogleTranslate()
       if (document.querySelector('#google_translate_element .goog-te-combo')) {
