@@ -44,8 +44,19 @@ function HitList({ hits }: { hits: StudyHit[] }) {
     <ul className="topic-list">
       {hits.map((h, i) => (
         <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
-          {h.href ? <Link to={h.href}>{h.title}</Link> : <span className="hit-title">{h.title}</span>}
+          {h.more ? (
+            <span className="hit-title">{h.title}</span>
+          ) : h.href ? (
+            <Link to={h.href}>{h.title}</Link>
+          ) : (
+            <span className="hit-title">{h.title}</span>
+          )}
           {h.detail ? <span className={h.full ? 'topic-note' : undefined}>{h.detail}</span> : null}
+          {h.more ? (
+            <Link className="topic-more" to={h.more.href}>
+              {h.more.label}
+            </Link>
+          ) : null}
         </li>
       ))}
     </ul>

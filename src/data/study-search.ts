@@ -14,6 +14,7 @@ export type StudyHit = {
   detail: string
   href: string
   full?: boolean
+  more?: { href: string; label: string }
 }
 
 export type StudyResults = Record<StudySource, StudyHit[]> & { naveMore: NaveReading[] }
@@ -65,26 +66,205 @@ const CHIP_STARTER_ID: Record<string, string> = {
   spirit: 'holy-spirit',
 }
 
-/** Scofield 1917 Summary notes: the chain-end write-up for the whole topic, not a word-hit. */
-const CHIP_SCOFIELD_SUMMARY: Record<string, { bookSlug: string; chapter: number; verse: number; heading: string; title: string }[]> =
-  {
-    jesus: [{ bookSlug: 'john', chapter: 20, verse: 28, heading: 'My Lord and My God', title: 'Deity of Jesus Christ' }],
-    salvation: [{ bookSlug: 'romans', chapter: 1, verse: 16, heading: 'salvation', title: 'Salvation' }],
-    faith: [{ bookSlug: 'hebrews', chapter: 11, verse: 39, heading: 'faith', title: 'Faith' }],
-    church: [{ bookSlug: 'hebrews', chapter: 12, verse: 23, heading: 'church', title: 'Church (true)' }],
-    god: [{ bookSlug: 'malachi', chapter: 3, verse: 18, heading: 'God', title: 'God' }],
-    gospel: [{ bookSlug: 'revelation', chapter: 14, verse: 6, heading: 'gospel', title: 'Gospel' }],
-    prayer: [{ bookSlug: 'luke', chapter: 11, verse: 1, heading: 'teach us to pray', title: 'Prayer' }],
-    grace: [{ bookSlug: 'john', chapter: 1, verse: 17, heading: 'grace', title: 'Grace' }],
-    love: [{ bookSlug: '2-john', chapter: 1, verse: 5, heading: 'that we love one another', title: 'Law of Christ' }],
-    atonement: [{ bookSlug: 'leviticus', chapter: 16, verse: 6, heading: 'Atonement', title: 'Atonement' }],
-    forgiveness: [{ bookSlug: 'matthew', chapter: 26, verse: 28, heading: 'remission', title: 'Forgiveness' }],
-    resurrection: [{ bookSlug: '1-corinthians', chapter: 15, verse: 52, heading: 'raised', title: 'Resurrection' }],
-    judgment: [{ bookSlug: 'revelation', chapter: 20, verse: 12, heading: 'judged', title: 'Judgment' }],
-    judgement: [{ bookSlug: 'revelation', chapter: 20, verse: 12, heading: 'judged', title: 'Judgment' }],
-    repentance: [{ bookSlug: 'acts', chapter: 17, verse: 30, heading: 'Repent', title: 'Repentance' }],
-    spirit: [{ bookSlug: 'acts', chapter: 2, verse: 4, heading: 'Holy Ghost', title: 'Holy Spirit' }],
-  }
+type ChipSummary = {
+  bookSlug: string
+  chapter: number
+  verse: number
+  heading: string
+  title: string
+  blurb: string
+}
+
+/** Scofield 1917 Summary notes, shortened for the chip; the link opens the full note. */
+const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
+  jesus: [
+    {
+      bookSlug: 'john',
+      chapter: 20,
+      verse: 28,
+      heading: 'My Lord and My God',
+      title: 'Jesus',
+      blurb:
+        'Scripture says Jesus Christ is God. The Old Testament already pointed this way when God appeared to people, and when the coming Messiah was called the Son of God. In the Gospels he receives worship and speaks as only God may speak. Thomas said what the whole New Testament is saying: he is Lord, and he is God.',
+    },
+  ],
+  salvation: [
+    {
+      bookSlug: 'romans',
+      chapter: 1,
+      verse: 16,
+      heading: 'salvation',
+      title: 'Salvation',
+      blurb:
+        'Salvation is the great gospel word. It takes in all that God does for the sinner: he is forgiven, declared right, bought back, made holy, and at last brought into glory. It has three tenses. The believer has been saved from sin’s guilt, is being kept in daily life, and will be saved when Christ appears.',
+    },
+  ],
+  faith: [
+    {
+      bookSlug: 'hebrews',
+      chapter: 11,
+      verse: 39,
+      heading: 'faith',
+      title: 'Faith',
+      blurb:
+        'Faith is trust. It receives what God has said, and it receives Jesus Christ as Saviour and Lord. That trust is not a work we offer God to earn his favor. It rests on Christ, who died for our sins and was raised, and it leads to love and obedience.',
+    },
+  ],
+  church: [
+    {
+      bookSlug: 'hebrews',
+      chapter: 12,
+      verse: 23,
+      heading: 'church',
+      title: 'Church',
+      blurb:
+        'The true church is everyone born again, from Pentecost until Christ raises his own. They are joined to one another and to Christ by the Holy Spirit. That living body is not the same thing as every group on earth that takes the name church.',
+    },
+  ],
+  god: [
+    {
+      bookSlug: 'malachi',
+      chapter: 3,
+      verse: 18,
+      heading: 'God',
+      title: 'God',
+      blurb:
+        'The Old Testament makes God known by his names and by what he does. He is the Creator, the LORD, and the God who keeps covenant with his people. He is one God, and the Scriptures speak of him in a way that prepares us for Father, Son, and Holy Spirit.',
+    },
+  ],
+  gospel: [
+    {
+      bookSlug: 'revelation',
+      chapter: 14,
+      verse: 6,
+      heading: 'gospel',
+      title: 'Gospel',
+      blurb:
+        'Gospel means good news. At heart it is the news that Christ died for our sins, was buried, and was raised, as the Scriptures said. Scofield also traces that good news as the promised kingdom and as saving grace. Both come from God.',
+    },
+  ],
+  prayer: [
+    {
+      bookSlug: 'luke',
+      chapter: 11,
+      verse: 1,
+      heading: 'teach us to pray',
+      title: 'Prayer',
+      blurb:
+        'We pray because we are children of God. Jesus taught his own to come to the Father, not as strangers before a distant power, but as sons. Prayer makes sense because the Father cares, and he invites us to ask.',
+    },
+  ],
+  grace: [
+    {
+      bookSlug: 'john',
+      chapter: 1,
+      verse: 17,
+      heading: 'grace',
+      title: 'Grace',
+      blurb:
+        'Grace is God’s kindness toward us in Christ, not wages we have earned. The law tells us what God requires; grace gives what we could not do. The same grace that saves a sinner also teaches a believer how to walk.',
+    },
+  ],
+  hope: [
+    {
+      bookSlug: '1-thessalonians',
+      chapter: 1,
+      verse: 3,
+      heading: 'work of faith',
+      title: 'Hope',
+      blurb:
+        'Hope in Scripture is not a wish. It is patient confidence in the Lord Jesus Christ, before God the Father. Faith works, love labors, and hope endures until what God has promised is seen.',
+    },
+  ],
+  love: [
+    {
+      bookSlug: '2-john',
+      chapter: 1,
+      verse: 5,
+      heading: 'that we love one another',
+      title: 'Love',
+      blurb:
+        'The law of Christ is love. The Holy Spirit puts that love in a new heart, so that we love one another without being driven by a list. This is not a lighter rule. It is God’s own love working through us.',
+    },
+  ],
+  atonement: [
+    {
+      bookSlug: 'leviticus',
+      chapter: 16,
+      verse: 6,
+      heading: 'Atonement',
+      title: 'Atonement',
+      blurb:
+        'On the Day of Atonement, Israel’s sin was dealt with by blood and by a substitute. Scofield reads that day as a picture of Christ, who makes peace with God for us by his own offering, once for all.',
+    },
+  ],
+  forgiveness: [
+    {
+      bookSlug: 'matthew',
+      chapter: 26,
+      verse: 28,
+      heading: 'remission',
+      title: 'Forgiveness',
+      blurb:
+        'To forgive, in Scripture, is to send the sin away. God forgives the one who comes through the blood of Christ. Those who have been forgiven are then called to forgive one another.',
+    },
+  ],
+  resurrection: [
+    {
+      bookSlug: '1-corinthians',
+      chapter: 15,
+      verse: 52,
+      heading: 'raised',
+      title: 'Resurrection',
+      blurb:
+        'The dead will be raised. The old saints already hoped in this, and Christ is the first to rise, never to die again. Those who are his will be raised in glory. There is also a resurrection of the unjust, unto judgment.',
+    },
+  ],
+  judgment: [
+    {
+      bookSlug: 'revelation',
+      chapter: 20,
+      verse: 12,
+      heading: 'judged',
+      title: 'Judgment',
+      blurb:
+        'The last judgment is of the dead who were not raised with Christ. The redeemed are already with him. Books are opened, and each is judged. This is not the same as the judgment seat where Christ reviews his own.',
+    },
+  ],
+  judgement: [
+    {
+      bookSlug: 'revelation',
+      chapter: 20,
+      verse: 12,
+      heading: 'judged',
+      title: 'Judgment',
+      blurb:
+        'The last judgment is of the dead who were not raised with Christ. The redeemed are already with him. Books are opened, and each is judged. This is not the same as the judgment seat where Christ reviews his own.',
+    },
+  ],
+  repentance: [
+    {
+      bookSlug: 'acts',
+      chapter: 17,
+      verse: 30,
+      heading: 'Repent',
+      title: 'Repentance',
+      blurb:
+        'Repentance is a change of mind—about sin, about God, and about ourselves. Sorrow may lead to it, but sorrow is not the whole of it. God commands all people to repent, and he himself gives repentance as a gift.',
+    },
+  ],
+  spirit: [
+    {
+      bookSlug: 'acts',
+      chapter: 2,
+      verse: 4,
+      heading: 'Holy Ghost',
+      title: 'Holy Spirit',
+      blurb:
+        'The Holy Spirit is a Person, not a force, and he is God. He was given at Pentecost, lives in the believer, and makes Christ known. He convicts the world of sin, and he is the power of Christian life.',
+    },
+  ],
+}
 
 function teachingStarter(q: string): StarterTopic | undefined {
   const n = q.trim().toLowerCase()
@@ -191,15 +371,20 @@ async function chipScofieldSummaries(q: string): Promise<StudyHit[]> {
   const rows = CHIP_SCOFIELD_SUMMARY[q.trim().toLowerCase()]
   if (!rows?.length) return []
   await Promise.all(rows.map((r) => ensureScofieldBook(r.bookSlug)))
-  const hits: StudyHit[] = []
-  for (const r of rows) {
-    const notes = notesForVerse(r.bookSlug, r.chapter, r.verse)
-    const want = r.heading.toLowerCase()
-    const match = notes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want)
-    if (!match) continue
-    hits.push(scoHit(r.title, match.bookSlug, match.chapter, match.verse, match.body, true))
-  }
-  return hits
+  return rows.map((r) => {
+    const href = verseHref(r.bookSlug, r.chapter, r.verse, 'scofield')
+    return {
+      source: 'scofield' as const,
+      title: r.title,
+      detail: r.blurb,
+      href,
+      full: true,
+      more: {
+        href,
+        label: `Read the full Summary · ${verseLabel(r.bookSlug, r.chapter, r.verse)}`,
+      },
+    }
+  })
 }
 
 function scoHit(title: string, bookSlug: string, chapter: number, verse: number, body: string, full: boolean): StudyHit {
