@@ -11,6 +11,14 @@ export function isStandaloneApp() {
   )
 }
 
+function stripReloadParam() {
+  const url = new URL(window.location.href)
+  if (!url.searchParams.has('_r')) return
+  url.searchParams.delete('_r')
+  const next = `${url.pathname}${url.search}${url.hash}`
+  window.history.replaceState({}, '', next)
+}
+
 export async function reloadApp() {
   if ('caches' in window) {
     try {
@@ -20,7 +28,9 @@ export async function reloadApp() {
       /* ignore */
     }
   }
-  window.location.reload()
+  const url = new URL(window.location.href)
+  url.searchParams.set('_r', Date.now().toString())
+  window.location.replace(url.toString())
 }
 
 function assetScriptsFromHtml(html: string) {
@@ -44,14 +54,36 @@ function currentAssetScripts() {
     .join('|')
 }
 
-export async function hasNewDeploy() {
+async function versionFileIsNewer() {
+  const res = await fetch(`/version.json?t=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  })
+  if (!res.ok) return false
+  const data = (await res.json()) as { id?: string }
+  return Boolean(data.id && __BUILD_ID__ && data.id !== __BUILD_ID__)
+}
+
+async function htmlAssetsAreNewer() {
   const current = currentAssetScripts()
   if (!current) return false
+  const res = await fetch(`/?_=${Date.now()}`, {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  })
+  if (!res.ok) return false
+  const remote = assetScriptsFromHtml(await res.text())
+  return Boolean(remote) && remote !== current
+}
+
+export async function hasNewDeploy() {
   try {
-    const res = await fetch(`/?_=${Date.now()}`, { cache: 'no-store' })
-    if (!res.ok) return false
-    const remote = assetScriptsFromHtml(await res.text())
-    return Boolean(remote) && remote !== current
+    if (await versionFileIsNewer()) return true
+  } catch {
+    /* HTML fallback */
+  }
+  try {
+    return await htmlAssetsAreNewer()
   } catch {
     return false
   }
@@ -60,6 +92,10 @@ export async function hasNewDeploy() {
 export function useAppUpdate() {
   const [standalone, setStandalone] = useState(isStandaloneApp)
   const [updateReady, setUpdateReady] = useState(false)
+
+  useEffect(() => {
+    stripReloadParam()
+  }, [])
 
   useEffect(() => {
     const mq = window.matchMedia('(display-mode: standalone)')
@@ -76,15 +112,22 @@ export function useAppUpdate() {
       if (await hasNewDeploy()) setUpdateReady(true)
     }
     void check()
-    const id = window.setInterval(check, 10 * 60 * 1000)
+    const id = window.setInterval(check, 60 * 1000)
     function onVis() {
       if (document.visibilityState === 'visible') void check()
     }
+    function onResume() {
+      void check()
+    }
     document.addEventListener('visibilitychange', onVis)
+    window.addEventListener('focus', onResume)
+    window.addEventListener('pageshow', onResume)
     return () => {
       alive = false
       window.clearInterval(id)
       document.removeEventListener('visibilitychange', onVis)
+      window.removeEventListener('focus', onResume)
+      window.removeEventListener('pageshow', onResume)
     }
   }, [])
 

@@ -134,6 +134,9 @@ button.text-link {
 nav { display: flex; gap: 1.25rem; font-size: 0.95rem; }
 
 .update-bar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1179,6 +1182,14 @@ a.tsk-go:active {
 }
 
 @media (max-width: 799px) {
+  .mast-refresh {
+    background: var(--cream);
+    color: var(--blue-deep);
+    font-weight: 600;
+    padding: 0.25rem 0.65rem;
+    border-radius: 0.3rem;
+  }
+  .mast-refresh:hover { color: var(--blue-deep); }
   .notes-backdrop {
     display: block;
     position: fixed;

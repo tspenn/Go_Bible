@@ -195,10 +195,10 @@ function MastNav() {
   const { user, signOut } = useAuth()
   return (
     <nav className="mast-nav" aria-label="Account">
-      <TranslateControl />
-      <button type="button" className="mast-auth" onClick={() => void reloadApp()}>
+      <button type="button" className="mast-auth mast-refresh" onClick={() => void reloadApp()}>
         Refresh
       </button>
+      <TranslateControl />
       <Link to="/settings">Settings</Link>
       <Link to="/about">About</Link>
       {user ? <Link to="/notebook">Notebook</Link> : null}
@@ -252,7 +252,8 @@ function Dock({ routeName }: { routeName: Route['name'] }) {
 function AppShell() {
   const loc = useLocation()
   const route = parsePath(loc.pathname)
-  const { updateReady, refresh } = useAppUpdate()
+  const { standalone, updateReady, refresh } = useAppUpdate()
+  const showRefreshBar = updateReady || standalone
 
   useEffect(() => {
     auditScofieldPhrases()
@@ -291,9 +292,9 @@ function AppShell() {
         <HeaderSearch />
         <MastNav />
       </header>
-      {updateReady ? (
+      {showRefreshBar ? (
         <div className="update-bar" role="status">
-          <p>A new version is ready.</p>
+          {updateReady ? <p>A new version is ready.</p> : null}
           <button type="button" onClick={() => void refresh()}>
             Refresh
           </button>

@@ -27,8 +27,8 @@ export function SettingsPage() {
 
       <h2>Refresh</h2>
       <p>
-        On a phone, the installed app does not pull down to reload. Tap Refresh when something looks
-        stuck, or when a notice says a new version is ready.
+        On a phone, the installed app does not pull down to reload. Use the Refresh bar under the
+        header — the same control that appears on a computer when a new version is ready.
       </p>
       <p>
         <button type="button" className="listen-btn" onClick={() => void reloadApp()}>

@@ -1,9 +1,26 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 
-// https://vite.dev/config/
+const buildId = Date.now().toString()
+
+function emitVersion(): Plugin {
+  return {
+    name: 'emit-version',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ id: buildId }),
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react()],
+  define: {
+    __BUILD_ID__: JSON.stringify(buildId),
+  },
+  plugins: [react(), emitVersion()],
   server: {
     watch: {
       ignored: ['**/scripts/raw/**'],
