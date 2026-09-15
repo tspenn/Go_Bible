@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type PointerEvent } from 'react'
-import { Link, navigate } from '../App'
+import { Link, closeNotesOverlay, ensureNotesOverlay, navigate, replacePath } from '../App'
 import { findVerse, nextChapter, paragraphsInChapter, versesInChapter } from '../data/kjv'
 import { ensureNavesBook, topicsForVerse, useNaves } from '../data/naves'
 import { markerLetter, noteKey, notesForChapter, phraseSpan, ensureScofieldBook, useScofield } from '../data/scofield'
@@ -227,15 +227,23 @@ export function VersePage({
     document.getElementById(`v${speak.verse}`)?.scrollIntoView({ block: 'center', inline: 'nearest' })
   }, [speak.status, speak.verse])
 
+  const chapterHref = `/bible/${bookSlug}/${chapter}`
+
   useEffect(() => {
     if (verse != null || isNoteTab(query.tab)) {
       setSheetOpen(true)
       if (query.tab === 'mine') setSheetFocus(user ? 'mine' : null)
       else if (isNoteTab(query.tab)) setSheetFocus(query.tab)
+      ensureNotesOverlay(chapterHref)
     } else {
       setSheetOpen(false)
     }
-  }, [bookSlug, chapter, verse, query.tab, user])
+  }, [bookSlug, chapter, verse, query.tab, user, chapterHref])
+
+  function goNotes(path: string) {
+    if (window.history.state?.overlay === 'notes') replacePath(path, { overlay: 'notes' })
+    else navigate(path, { overlay: 'notes' })
+  }
 
   useEffect(() => {
     if (!sheetOpen || query.tab !== 'mine' || !user) return
@@ -289,7 +297,7 @@ export function VersePage({
     setSheetOpen(true)
     const params = new URLSearchParams({ tab: 'robertson' })
     if (note.word) params.set('w', note.word)
-    navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?${params}#rwp-${note.letter}`)
+    goNotes(`/bible/${bookSlug}/${chapter}/${note.verse}?${params}#rwp-${note.letter}`)
   }
 
   function openScofield(note: (typeof marked)[number]) {
@@ -297,7 +305,7 @@ export function VersePage({
     setSheetFocus('scofield')
     setHighlightKey(note.key)
     setSheetOpen(true)
-    navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=scofield`)
+    goNotes(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=scofield`)
   }
 
   function openHenry(nextVerse: number) {
@@ -305,7 +313,7 @@ export function VersePage({
     setSheetFocus('henry')
     setHighlightKey(null)
     setSheetOpen(true)
-    navigate(`/bible/${bookSlug}/${chapter}/${nextVerse}?tab=henry`)
+    goNotes(`/bible/${bookSlug}/${chapter}/${nextVerse}?tab=henry`)
   }
 
   function openMine(note: UserNote) {
@@ -315,17 +323,12 @@ export function VersePage({
     setSheetFocus('mine')
     setHighlightKey(note.id)
     setSheetOpen(true)
-    navigate(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=mine&note=${note.id}`)
+    goNotes(`/bible/${bookSlug}/${chapter}/${note.verse}?tab=mine&note=${note.id}`)
   }
 
   function closeSheet() {
     closeWord()
-    setSheetOpen(false)
-    setSheetFocus(null)
-    setHighlightKey(null)
-    if (verse != null || isNoteTab(query.tab)) {
-      navigate(`/bible/${bookSlug}/${chapter}`)
-    }
+    closeNotesOverlay(chapterHref)
   }
 
   function onThisVerse(nextVerse: number) {
@@ -333,7 +336,7 @@ export function VersePage({
     setSheetFocus(null)
     setHighlightKey(null)
     setSheetOpen(true)
-    if (verse !== nextVerse) navigate(`/bible/${bookSlug}/${chapter}/${nextVerse}`)
+    goNotes(`/bible/${bookSlug}/${chapter}/${nextVerse}`)
   }
 
   const sheetNotes = sheetVerse != null ? (byVerse.get(sheetVerse) ?? []) : []

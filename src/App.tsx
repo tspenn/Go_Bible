@@ -74,22 +74,48 @@ function emitLoc() {
   window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }))
 }
 
-export function navigate(to: string) {
+type HistState = { app: true; overlay?: 'notes' }
+
+function histState(overlay?: 'notes' | null): HistState {
+  return overlay ? { app: true, overlay } : { app: true }
+}
+
+export function navigate(to: string, extra?: { overlay?: 'notes' }) {
   const dest = appPath(to)
   if (!dest) return
   if (dest === here()) {
     emitLoc()
     return
   }
-  window.history.pushState({ app: true }, '', dest)
+  window.history.pushState(histState(extra?.overlay), '', dest)
   emitLoc()
 }
 
-export function replacePath(to: string) {
+export function replacePath(to: string, extra?: { overlay?: 'notes' | null }) {
   const dest = appPath(to)
   if (!dest) return
-  window.history.replaceState({ app: true }, '', dest)
+  const overlay = extra && 'overlay' in extra ? extra.overlay : window.history.state?.overlay
+  window.history.replaceState(histState(overlay), '', dest)
   emitLoc()
+}
+
+/** Put the chapter under the notes URL so phone Back closes the panel first. */
+export function ensureNotesOverlay(chapterPath: string) {
+  const chapter = appPath(chapterPath)
+  if (!chapter) return
+  if (window.history.state?.overlay === 'notes') return
+  const notesPath = here()
+  if (notesPath === chapter) return
+  window.history.replaceState(histState(), '', chapter)
+  window.history.pushState(histState('notes'), '', notesPath)
+}
+
+export function closeNotesOverlay(chapterPath: string) {
+  if (window.history.state?.overlay === 'notes') {
+    window.history.back()
+    return
+  }
+  replacePath(chapterPath, { overlay: null })
 }
 
 export function Link({
