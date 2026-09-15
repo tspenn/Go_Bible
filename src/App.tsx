@@ -15,6 +15,7 @@ import { SettingsPage } from './pages/SettingsPage'
 import { AboutPage } from './pages/AboutPage'
 import { LoginPage } from './pages/LoginPage'
 import { TranslateControl, TranslateFooterLink } from './components/TranslateControl'
+import { reloadApp, useAppUpdate } from './lib/appUpdate'
 
 function useLocation() {
   const [loc, setLoc] = useState(() => ({
@@ -167,6 +168,9 @@ function MastNav() {
   return (
     <nav className="mast-nav" aria-label="Account">
       <TranslateControl />
+      <button type="button" className="mast-auth" onClick={() => void reloadApp()}>
+        Refresh
+      </button>
       <Link to="/settings">Settings</Link>
       <Link to="/about">About</Link>
       {user ? <Link to="/notebook">Notebook</Link> : null}
@@ -220,6 +224,7 @@ function Dock({ routeName }: { routeName: Route['name'] }) {
 function AppShell() {
   const loc = useLocation()
   const route = parsePath(loc.pathname)
+  const { updateReady, refresh } = useAppUpdate()
 
   useEffect(() => {
     auditScofieldPhrases()
@@ -236,6 +241,14 @@ function AppShell() {
         <HeaderSearch />
         <MastNav />
       </header>
+      {updateReady ? (
+        <div className="update-bar" role="status">
+          <p>A new version is ready.</p>
+          <button type="button" onClick={() => void refresh()}>
+            Refresh
+          </button>
+        </div>
+      ) : null}
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />
       </main>

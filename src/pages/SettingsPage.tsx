@@ -1,5 +1,6 @@
 import { Link } from '../App'
 import { PEN_COLORS, penLabel, setPenName, useMarks } from '../data/marks'
+import { reloadApp } from '../lib/appUpdate'
 import { useAuth } from '../lib/auth'
 import { setListenGender, useListenGender } from '../lib/speak'
 
@@ -17,6 +18,17 @@ export function SettingsPage() {
       </p>
       <p>
         <Link to="/about">About the text, copyright, and sources</Link>
+      </p>
+
+      <h2>Refresh</h2>
+      <p>
+        On a phone, the installed app does not pull down to reload. Tap Refresh when something looks
+        stuck, or when a notice says a new version is ready.
+      </p>
+      <p>
+        <button type="button" className="listen-btn" onClick={() => void reloadApp()}>
+          Refresh
+        </button>
       </p>
 
       <h2>Find a chapter</h2>

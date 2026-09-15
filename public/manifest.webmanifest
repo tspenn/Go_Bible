@@ -1,0 +1,17 @@
+{
+  "name": "Walking By Faith",
+  "short_name": "By Faith",
+  "description": "A Bible tool made for reading.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f7f5f2",
+  "theme_color": "#8fa3b5",
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
