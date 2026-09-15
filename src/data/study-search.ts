@@ -1,12 +1,12 @@
 import { boostedScriptureRefs, commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
 import { DICTIONARY, type DictEntry } from './dictionary'
-import { ensureHenryBook, henryNotesForVerse, SEED_NOTES } from './henry'
+import { ensureHenryBook, HENRY_SOURCE, henryNotesForVerse, SEED_NOTES } from './henry'
 import { bookName, findVerse, searchVerses, type Verse } from './kjv'
 import { featuredOneWords, searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
-import { ensureScofieldBook, notesForVerse, SCOFIELD } from './scofield'
+import { ensureScofieldBook, notesForVerse, SCOFIELD, SCOFIELD_SOURCE } from './scofield'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from './starters'
 
-export type StudySource = 'scripture' | 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
+export type StudySource = 'blurb' | 'scripture' | 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
 
 export type StudyHit = {
   source: StudySource
@@ -15,6 +15,8 @@ export type StudyHit = {
   href: string
   full?: boolean
   more?: { href: string; label: string }
+  /** Scholar/source line under the text — never in the heading or the blurb. */
+  attribution?: string
 }
 
 export type StudyResults = Record<StudySource, StudyHit[]> & { naveMore: NaveReading[] }
@@ -24,6 +26,7 @@ type HenryRow = { b: string; c: number; v: number; r: string; s: string; h: stri
 type TskRow = { t: string; b: string; c: number; v: number }
 
 const empty = (): StudyResults => ({
+  blurb: [],
   scripture: [],
   naves: [],
   scofield: [],
@@ -140,7 +143,7 @@ const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
       heading: 'gospel',
       title: 'Gospel',
       blurb:
-        'Gospel means good news. At heart it is the news that Christ died for our sins, was buried, and was raised, as the Scriptures said. Scofield also traces that good news as the promised kingdom and as saving grace. Both come from God.',
+        'Gospel means good news. At heart it is the news that Christ died for our sins, was buried, and was raised, as the Scriptures said. That good news is also the promised kingdom and saving grace. Both come from God.',
     },
   ],
   prayer: [
@@ -195,7 +198,7 @@ const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
       heading: 'Atonement',
       title: 'Atonement',
       blurb:
-        'On the Day of Atonement, Israel’s sin was dealt with by blood and by a substitute. Scofield reads that day as a picture of Christ, who makes peace with God for us by his own offering, once for all.',
+        'On the Day of Atonement, Israel’s sin was dealt with by blood and by a substitute. That day is a picture of Christ, who makes peace with God for us by his own offering, once for all.',
     },
   ],
   forgiveness: [
@@ -329,13 +332,16 @@ async function loadIndexes() {
 }
 
 function eastonHit(d: DictEntry): StudyHit {
-  const source = d.source === 'Smith' ? 'Smith' : 'Easton, 1897'
   return {
     source: 'easton',
     title: d.name,
-    detail: `${source}. ${plain(d.body)}`,
+    detail: plain(d.body),
     href: '',
     full: true,
+    attribution:
+      d.source === 'Smith'
+        ? 'Smith’s Bible Dictionary (public domain).'
+        : 'Easton’s Bible Dictionary, 1897 (public domain).',
   }
 }
 
@@ -367,24 +373,16 @@ function searchEaston(q: string, limit: number, exact = false): StudyHit[] {
   return hits
 }
 
-async function chipScofieldSummaries(q: string): Promise<StudyHit[]> {
+function chipBlurbs(q: string): StudyHit[] {
   const rows = CHIP_SCOFIELD_SUMMARY[q.trim().toLowerCase()]
   if (!rows?.length) return []
-  await Promise.all(rows.map((r) => ensureScofieldBook(r.bookSlug)))
-  return rows.map((r) => {
-    const href = verseHref(r.bookSlug, r.chapter, r.verse, 'scofield')
-    return {
-      source: 'scofield' as const,
-      title: r.title,
-      detail: r.blurb.replace(/([.!?])\s+(?=[A-Z“])/g, '$1\n\n'),
-      href,
-      full: true,
-      more: {
-        href,
-        label: `Read the full Summary · ${verseLabel(r.bookSlug, r.chapter, r.verse)}`,
-      },
-    }
-  })
+  return rows.map((r) => ({
+    source: 'blurb' as const,
+    title: r.title,
+    detail: r.blurb.replace(/([.!?])\s+(?=[A-Z“])/g, '$1\n\n'),
+    href: '',
+    full: true,
+  }))
 }
 
 function scoHit(title: string, bookSlug: string, chapter: number, verse: number, body: string, full: boolean): StudyHit {
@@ -394,6 +392,7 @@ function scoHit(title: string, bookSlug: string, chapter: number, verse: number,
     detail: plain(body),
     href: verseHref(bookSlug, chapter, verse, 'scofield'),
     full,
+    attribution: SCOFIELD_SOURCE,
   }
 }
 
@@ -405,6 +404,7 @@ function henryHit(bookSlug: string, chapter: number, verse: number, range: strin
     detail: plain(body),
     href: verseHref(bookSlug, chapter, verse, 'henry'),
     full,
+    attribution: HENRY_SOURCE,
   }
 }
 
@@ -576,34 +576,34 @@ export async function searchStudy(q: string): Promise<StudyResults> {
     16,
   )
   const extra = chip ? [] : fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
-  out.scripture = [...pinned, ...textExtra, ...extra].map((v) => ({
+  const asScripture = (v: Verse, full: boolean): StudyHit => ({
     source: 'scripture',
     title: `${v.book} ${v.chapter}:${v.verse}`,
-    detail: clip(v.text, 180),
+    detail: full ? v.text : clip(v.text, 180),
     href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
-  }))
+    full,
+  })
+  out.scripture = [...pinned, ...textExtra, ...extra].map((v) => asScripture(v, chip))
   out.naveMore = reading
-  const naveVerses = fromNave.map((v) => ({
-    source: 'naves' as const,
-    title: `${v.book} ${v.chapter}:${v.verse}`,
-    detail: v.text,
-    href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
-    full: true,
-  }))
+  const naveVerses = fromNave.map((v) => asScripture(v, true))
   const naveNames = topics.slice(0, 16).map((t) => ({
     source: 'naves' as const,
     title: t.name,
     detail: t.summary,
     href: `/topics/${t.slug}`,
   }))
-  out.naves = [...naveVerses, ...naveNames]
+  out.naves = chip ? naveNames : [...naveVerses, ...naveNames]
   if (chip) {
-    const summaries = await chipScofieldSummaries(q)
-    const pinnedNotes = await pinTeachingNotes(q, summaries, [], { sco: summaries.length === 0 })
+    out.blurb = chipBlurbs(q)
+    const pinnedNotes = await pinTeachingNotes(q, [], [], { sco: true, hen: true })
     out.scofield = pinnedNotes.sco
     out.henry = pinnedNotes.hen
+    out.scripture = [
+      ...out.scripture,
+      ...naveVerses.filter((v) => !out.scripture.some((s) => s.href === v.href)),
+    ]
     out.tsk = []
-    out.easton = searchEaston(q, 2, true)
+    out.easton = []
     return out
   }
   let sco = searchScofield(notesTerms, 8)
@@ -619,12 +619,13 @@ export async function searchStudy(q: string): Promise<StudyResults> {
 }
 
 export const STUDY_LABELS: Record<StudySource, string> = {
-  scripture: 'Scripture',
-  naves: "Nave’s",
-  scofield: 'Scofield',
-  henry: 'Matthew Henry',
+  blurb: 'Blurb',
+  scofield: 'Summary',
+  henry: 'Commentary',
+  scripture: 'Selection of verses',
+  naves: 'Naves',
   tsk: 'See also',
   easton: 'Dictionary',
 }
 
-export const STUDY_ORDER: StudySource[] = ['easton', 'scofield', 'henry', 'naves', 'tsk', 'scripture']
+export const STUDY_ORDER: StudySource[] = ['blurb', 'scofield', 'henry', 'scripture', 'naves', 'tsk', 'easton']

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, navigate, replacePath } from '../App'
 import { bookName } from '../data/kjv'
-import { featuredOneWords, oneWordSuggestions, type NaveReading } from '../data/naves'
+import { featuredOneWords, NAVES_SOURCE, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import { ScofieldProse, scofieldHrefParts } from '../components/ScofieldProse'
 import {
@@ -69,6 +69,7 @@ function HitList({ hits }: { hits: StudyHit[] }) {
                 <span className={h.full ? 'topic-note' : undefined}>{h.detail}</span>
               )
             ) : null}
+            {h.attribution ? <p className="topic-attr">{h.attribution}</p> : null}
             {h.more ? (
               <Link className="topic-more" to={h.more.href}>
                 {h.more.label}
@@ -89,7 +90,7 @@ function NaveSeeMore({ items }: { items: NaveReading[] }) {
         <li key={t.slug}>
           <Link to={`/topics/${t.slug}`}>
             See more
-            <span> in {t.name} — all the verses, in Nave’s order</span>
+            <span> in {t.name} — all the verses on this topic</span>
           </Link>
         </li>
       ))}
@@ -245,7 +246,14 @@ export function TopicsPage({ search = '' }: { search?: string }) {
                   <section key={src}>
                     <h2>{STUDY_LABELS[src]}</h2>
                     <HitList hits={results[src]} />
-                    {src === 'naves' ? <NaveSeeMore items={more} /> : null}
+                    {src === 'naves' ? (
+                      <>
+                        <NaveSeeMore items={more} />
+                        {results[src].length > 0 || more.length > 0 ? (
+                          <p className="topic-attr">{NAVES_SOURCE}</p>
+                        ) : null}
+                      </>
+                    ) : null}
                   </section>
                 )
               })

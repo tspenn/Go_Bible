@@ -659,6 +659,14 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   font-size: 0.95rem;
   font-weight: 600;
 }
+.topic-attr {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  opacity: 0.68;
+  font-style: italic;
+  max-width: 42rem;
+}
 .nave-see-more {
   list-style: none;
   padding: 0.85rem 0 0;
