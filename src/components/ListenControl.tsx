@@ -9,25 +9,21 @@ import {
 } from '../lib/speak'
 
 export function ListenControl({
-  bookName,
-  chapter,
-  verses,
-  fromVerse,
+  label,
+  onStart,
+  sessionKey,
 }: {
-  bookName: string
-  chapter: number
-  verses: Pick<Verse, 'verse' | 'text'>[]
-  fromVerse?: number
+  label: string
+  onStart: () => void | Promise<void>
+  sessionKey: string
 }) {
   const speak = useSpeak()
 
   useEffect(() => {
     return () => stopSpeak()
-  }, [bookName, chapter])
+  }, [sessionKey])
 
   if (!speak.supported) return null
-
-  const label = fromVerse && fromVerse > 1 ? `Listen from verse ${fromVerse}` : 'Listen to this chapter'
 
   const listening = speak.status !== 'idle'
 
@@ -36,11 +32,7 @@ export function ListenControl({
       {listening ? <div className="listen-row-slot" aria-hidden="true" /> : null}
       <div className={`listen-row${listening ? ' listening' : ''}`}>
         {speak.status === 'idle' && (
-          <button
-            type="button"
-            className="listen-btn"
-            onClick={() => void startChapterSpeak({ bookName, chapter, verses, fromVerse })}
-          >
+          <button type="button" className="listen-btn" onClick={() => void onStart()}>
             {label}
           </button>
         )}
@@ -64,5 +56,26 @@ export function ListenControl({
         )}
       </div>
     </>
+  )
+}
+
+export function ChapterListen({
+  bookName,
+  chapter,
+  verses,
+  fromVerse,
+}: {
+  bookName: string
+  chapter: number
+  verses: Pick<Verse, 'verse' | 'text'>[]
+  fromVerse?: number
+}) {
+  const label = fromVerse && fromVerse > 1 ? `Listen from verse ${fromVerse}` : 'Listen to this chapter'
+  return (
+    <ListenControl
+      sessionKey={`${bookName}-${chapter}`}
+      label={label}
+      onStart={() => startChapterSpeak({ bookName, chapter, verses, fromVerse })}
+    />
   )
 }

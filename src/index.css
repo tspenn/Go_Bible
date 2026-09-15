@@ -937,6 +937,11 @@ a.mark-action {
   min-height: 2.5rem;
   cursor: pointer;
 }
+.mark-row-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.1rem;
+}
 .mark-field {
   display: flex;
   flex-direction: column;

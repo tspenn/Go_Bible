@@ -20,7 +20,7 @@ import {
   type RobertsonNote,
 } from '../data/robertson'
 import { BookPicker } from '../components/BookPicker'
-import { ListenControl } from '../components/ListenControl'
+import { ChapterListen } from '../components/ListenControl'
 import { ShareArrow, sharePageUrl } from '../components/ShareArrow'
 import { MarkMenu, SignInPrompt, type MarkRequest } from '../components/MarkMenu'
 import { NotesSheet, type SheetFocus } from '../components/NotesSheet'
@@ -397,7 +397,7 @@ export function VersePage({
             }
           />
         </div>
-        <ListenControl bookName={bookName} chapter={chapter} verses={list} fromVerse={verse} />
+        <ChapterListen bookName={bookName} chapter={chapter} verses={list} fromVerse={verse} />
 
         <div
           className="chapter"

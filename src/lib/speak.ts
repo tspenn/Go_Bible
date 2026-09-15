@@ -268,13 +268,9 @@ function speakNext(token: number) {
   }, 60)
 }
 
-export async function startChapterSpeak(opts: {
-  bookName: string
-  chapter: number
-  verses: Pick<Verse, 'verse' | 'text'>[]
-  fromVerse?: number
-}) {
+async function beginSpeak(nextQueue: { verse: number | null; text: string }[]) {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  if (!nextQueue.length) return
   const token = ++gen
   if (current) {
     current.onend = null
@@ -287,20 +283,40 @@ export async function startChapterSpeak(opts: {
   const voices = await loadVoices()
   if (token !== gen) return
   picked = pickUsVoice(voices, listenGender)
+  queue = nextQueue
+  setState({
+    status: 'playing',
+    verse: nextQueue.find((item) => item.verse != null)?.verse ?? null,
+    voiceName: picked?.name ?? null,
+    supported: true,
+  })
+  speakNext(token)
+}
+
+export async function startChapterSpeak(opts: {
+  bookName: string
+  chapter: number
+  verses: Pick<Verse, 'verse' | 'text'>[]
+  fromVerse?: number
+}) {
   const from = opts.fromVerse && opts.fromVerse > 1 ? opts.fromVerse : 1
   const slice = opts.verses.filter((v) => v.verse >= from)
   const intro =
     from > 1
       ? `${opts.bookName}, chapter ${opts.chapter}, from verse ${from}.`
       : `${opts.bookName}, chapter ${opts.chapter}.`
-  queue = [{ verse: null, text: intro }, ...slice.map((v) => ({ verse: v.verse, text: v.text }))]
-  setState({
-    status: 'playing',
-    verse: null,
-    voiceName: picked?.name ?? null,
-    supported: true,
-  })
-  speakNext(token)
+  await beginSpeak([{ verse: null, text: intro }, ...slice.map((v) => ({ verse: v.verse, text: v.text }))])
+}
+
+export async function startPassagesSpeak(opts: {
+  intro?: string
+  passages: { cite: string; text: string }[]
+}) {
+  if (!opts.passages.length) return
+  await beginSpeak([
+    ...(opts.intro ? [{ verse: null, text: opts.intro }] : []),
+    ...opts.passages.map((p) => ({ verse: null, text: `${p.cite}. ${p.text}` })),
+  ])
 }
 
 export function getSpeak() {

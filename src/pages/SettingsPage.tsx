@@ -53,7 +53,7 @@ export function SettingsPage() {
         <li>In Matthew, Mark, Luke, and Acts, a slate-blue word has an A. T. Robertson Word Picture (1930). Tap the word or its letter.</li>
         <li>See also lists original TSK cross-references in green. Hover or press a link for “Go to …” then tap to open that verse. The first six links show; tap More references for the rest.</li>
         <li>Blue dotted names are Easton or Smith dictionary entries.</li>
-        <li>Listen to this chapter reads the Go-Bible text aloud. It uses a United States English voice, not a British one. Male is the default; you can switch to female below. Pause, Resume, and Stop sit beside the chapter title. The verse being read is washed in light blue.</li>
+        <li>Listen to this chapter reads the Go-Bible text aloud. Voice, Notebook highlights, Pause, and Stop are under Listen below.</li>
       </ul>
 
       <h2>Your marks</h2>
@@ -65,7 +65,7 @@ export function SettingsPage() {
         <li>Your notes show a ★ (or 1, 2, 3 if you have more than one on that verse). They are not Scofield letters.</li>
         <li>Tap ★ to open My note in the panel.</li>
         <li>You stay signed in across tab close, browser close, and iPad sleep. Sign out only if you tap Sign out.</li>
-        <li>In Notebook, choose Download text or Download Word for a Sunday School file of your verses, marks, and notes.</li>
+        <li>In Notebook, choose Download text or Download Word for a Sunday School file of your verses, marks, and notes. Listen to highlights reads only those marked verses, not the rest of the chapter.</li>
       </ul>
       <p>
         {user ? (
@@ -75,8 +75,17 @@ export function SettingsPage() {
         )}
       </p>
 
-      <h2>Listen voice</h2>
+      <h2>Listen</h2>
       <p>United States English. This device remembers your choice.</p>
+      <p>
+        On a chapter, Listen reads the Go-Bible text aloud. If you opened a verse, it starts there.
+        Pause, Resume, and Stop stay at the top of the screen while it reads. The verse being read is
+        washed in light blue.
+      </p>
+      <p>
+        In Notebook, under Highlights by pen, Listen to highlights reads only those marked verses — not
+        the rest of each chapter. Listen beside a highlight reads that verse alone.
+      </p>
       <p className="listen-gender">
         <button
           type="button"

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from '../App'
+import { ListenControl } from '../components/ListenControl'
 import {
   bookmarkHref,
   formatMarkRef,
@@ -10,12 +11,50 @@ import {
   removeNote,
   toggleBookmark,
   useMarks,
+  type Highlight,
 } from '../data/marks'
+import { findVerse } from '../data/kjv'
 import { useAuth } from '../lib/auth'
+import { startPassagesSpeak, useSpeak } from '../lib/speak'
+
+const PEN_ORDER = [
+  'yellow',
+  'gold',
+  'orange',
+  'pink',
+  'rose',
+  'sage',
+  'teal',
+  'dusty-blue',
+  'lavender',
+  'gray',
+] as const
+
+function passageFromHighlight(h: Highlight) {
+  const v = findVerse(h.bookSlug, h.chapter, h.verse)
+  if (!v) return []
+  return [{ cite: formatMarkRef(h.bookSlug, h.chapter, h.verse), text: v.text }]
+}
+
+function passagesFromHighlights(highlights: Highlight[], color?: string) {
+  const seen = new Set<string>()
+  const out: { cite: string; text: string }[] = []
+  const colors = color ? [color] : PEN_ORDER
+  for (const id of colors) {
+    for (const h of highlights.filter((row) => row.color === id)) {
+      const key = `${h.bookSlug}:${h.chapter}:${h.verse}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(...passageFromHighlight(h))
+    }
+  }
+  return out
+}
 
 export function NotebookPage() {
   const { ready, user } = useAuth()
   const marks = useMarks()
+  const speak = useSpeak()
   const [busy, setBusy] = useState<'text' | 'word' | null>(null)
   const [exportError, setExportError] = useState('')
   const subjects = [...new Set(marks.notes.map((n) => n.subject).filter(Boolean) as string[])].sort(
@@ -121,30 +160,66 @@ export function NotebookPage() {
       {marks.highlights.length === 0 && (
         <p>No highlights yet. Select two or more words, then choose Highlight.</p>
       )}
-      {['yellow', 'gold', 'orange', 'pink', 'rose', 'sage', 'teal', 'dusty-blue', 'lavender', 'gray'].map(
-        (id) => {
+      {marks.highlights.length > 0 && speak.supported ? (
+        <ListenControl
+          sessionKey="notebook-highlights"
+          label="Listen to highlights"
+          onStart={() =>
+            startPassagesSpeak({
+              intro: 'Highlights.',
+              passages: passagesFromHighlights(marks.highlights),
+            })
+          }
+        />
+      ) : null}
+      {PEN_ORDER.map((id) => {
           const rows = marks.highlights.filter((h) => h.color === id)
           if (rows.length === 0) return null
           const label = penLabel(id as (typeof rows)[0]['color'], marks.penNames)
+          const penPassages = passagesFromHighlights(rows, id)
           return (
             <div key={id}>
               <h3 className="pen-heading">{label}</h3>
+              {speak.supported && penPassages.length > 1 ? (
+                <button
+                  type="button"
+                  className="listen-btn quiet"
+                  onClick={() =>
+                    startPassagesSpeak({
+                      intro: `${label} highlights.`,
+                      passages: penPassages,
+                    })
+                  }
+                >
+                  Listen to {label}
+                </button>
+              ) : null}
               <ul className="topic-list">
                 {rows.map((h) => (
                   <li key={h.id}>
                     <Link to={highlightHref(h)}>
                       {formatMarkRef(h.bookSlug, h.chapter, h.verse)} — “{h.phrase}”
                     </Link>
-                    <button type="button" className="mark-back" onClick={() => void removeHighlight(h.id)}>
-                      Remove
-                    </button>
+                    <div className="mark-row-tools">
+                      {speak.supported ? (
+                        <button
+                          type="button"
+                          className="mark-back"
+                          onClick={() => void startPassagesSpeak({ passages: passageFromHighlight(h) })}
+                        >
+                          Listen
+                        </button>
+                      ) : null}
+                      <button type="button" className="mark-back" onClick={() => void removeHighlight(h.id)}>
+                        Remove
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
             </div>
           )
-        },
-      )}
+        })}
 
       <h2>Subjects</h2>
       {subjects.length === 0 && <p>No subjects yet. Add an optional subject when you save a note.</p>}
