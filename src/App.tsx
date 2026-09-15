@@ -227,6 +227,10 @@ function topicsOn(name: Route['name']) {
   return name === 'topics' || name === 'topic'
 }
 
+function readingFocus(name: Route['name']) {
+  return name === 'chapter' || name === 'verse' || name === 'topic'
+}
+
 function Dock({ routeName }: { routeName: Route['name'] }) {
   return (
     <nav className="dock" aria-label="Main">
@@ -288,7 +292,7 @@ function AppShell() {
   }, [])
 
   return (
-    <div className="app">
+    <div className={`app${readingFocus(route.name) ? ' reading-focus' : ''}`}>
       <header className="masthead">
         <Link to="/" className="brand">
           <img className="brand-mark" src="/logo.png" width="40" height="40" alt="" />
@@ -313,7 +317,11 @@ function AppShell() {
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />
       </main>
-      <div className="bottom-chrome">
+      <div
+        className="bottom-chrome"
+        aria-hidden={readingFocus(route.name) || undefined}
+        inert={readingFocus(route.name) || undefined}
+      >
         <Dock routeName={route.name} />
         <footer>
           <p>

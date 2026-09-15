@@ -109,6 +109,8 @@ export function TopicPage({ slug }: { slug: string }) {
       ) : null}
       <p>
         <Link to="/topics">All topics</Link>
+        {' · '}
+        <Link to="/">Home</Link>
       </p>
     </article>
   )

@@ -523,6 +523,9 @@ export function VersePage({
         ) : (
           <p className="chapter-next done">End of the Bible</p>
         )}
+        <p className="chapter-home">
+          <Link to="/">Home</Link>
+        </p>
       </div>
 
       {wordPopup?.kind === 'strongs' && (
