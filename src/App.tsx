@@ -191,17 +191,10 @@ function Screen({
   }
 }
 
-function MastNav() {
+function MastAccount() {
   const { user, signOut } = useAuth()
   return (
-    <nav className="mast-nav" aria-label="Account">
-      <button type="button" className="mast-auth mast-refresh" onClick={() => void reloadApp()}>
-        Refresh
-      </button>
-      <TranslateControl />
-      <Link to="/settings">Settings</Link>
-      <Link to="/about">About</Link>
-      {user ? <Link to="/notebook">Notebook</Link> : null}
+    <div className="mast-account">
       {user ? (
         <button type="button" className="mast-auth" onClick={() => void signOut().then(() => navigate('/'))}>
           Sign out
@@ -209,6 +202,19 @@ function MastNav() {
       ) : (
         <Link to="/login">Sign in</Link>
       )}
+    </div>
+  )
+}
+
+function MastNav() {
+  const { user } = useAuth()
+  return (
+    <nav className="mast-nav" aria-label="Account">
+      <button type="button" className="mast-auth mast-refresh" onClick={() => void reloadApp()}>
+        Refresh
+      </button>
+      <Link to="/settings">Settings</Link>
+      {user ? <Link to="/notebook">Notebook</Link> : null}
     </nav>
   )
 }
@@ -287,8 +293,12 @@ function AppShell() {
         <Link to="/" className="brand">
           <img className="brand-mark" src="/logo.png" width="40" height="40" alt="" />
           <span className="brand-name">Walking By Faith</span>
-          <span className="brand-tag">{TAGLINE}</span>
         </Link>
+        <MastAccount />
+        <div className="brand-meta">
+          <span className="brand-tag">{TAGLINE}</span>
+          <TranslateControl quiet />
+        </div>
         <HeaderSearch />
         <MastNav />
       </header>

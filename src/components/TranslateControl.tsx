@@ -25,7 +25,7 @@ function TranslateGlobe() {
   )
 }
 
-export function TranslateControl() {
+export function TranslateControl({ quiet = false }: { quiet?: boolean }) {
   const wrap = useRef<HTMLDivElement>(null)
   const [open, setOpen] = useState(false)
 
@@ -71,10 +71,10 @@ export function TranslateControl() {
   }, [open])
 
   return (
-    <div className="translate-wrap" ref={wrap}>
+    <div className={`translate-wrap${quiet ? ' quiet' : ''}`} ref={wrap}>
       <button
         type="button"
-        className="translate-btn"
+        className={`translate-btn${quiet ? ' quiet' : ''}`}
         aria-expanded={open}
         aria-controls="translate-popover"
         onClick={() => setOpen((v) => !v)}

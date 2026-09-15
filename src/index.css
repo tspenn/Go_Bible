@@ -35,16 +35,41 @@ a:hover { color: var(--gold); }
   background: var(--blue);
   color: var(--cream);
   padding: 0.85rem 1.25rem;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(12rem, 1fr) auto;
+  grid-template-areas:
+    "brand search account"
+    "meta search nav";
   align-items: center;
-  gap: 0.85rem 1.25rem;
-  flex-wrap: wrap;
+  column-gap: 1.25rem;
+  row-gap: 0.35rem;
 }
 
 .masthead a { color: var(--cream); }
 
+.brand { grid-area: brand; }
+.mast-account {
+  grid-area: account;
+  justify-self: end;
+  font-size: 0.88rem;
+}
+.brand-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+  min-width: 0;
+}
+.header-search {
+  grid-area: search;
+  justify-self: end;
+  width: 100%;
+  max-width: 24rem;
+}
 .mast-nav {
+  grid-area: nav;
+  justify-self: end;
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem 1rem;
@@ -98,11 +123,6 @@ button.text-link {
   opacity: 0.92;
 }
 
-.header-search {
-  flex: 1 1 14rem;
-  max-width: 24rem;
-  margin-left: auto;
-}
 .header-search input,
 .header-search-gate {
   width: 100%;
@@ -1182,6 +1202,30 @@ a.tsk-go:active {
 }
 
 @media (max-width: 799px) {
+  .masthead {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "brand account"
+      "meta meta"
+      "search search"
+      "nav nav";
+    align-items: start;
+    column-gap: 0.75rem;
+    row-gap: 0.45rem;
+  }
+  .mast-account {
+    padding-top: 0.35rem;
+    font-size: 0.82rem;
+  }
+  .header-search {
+    justify-self: stretch;
+    max-width: none;
+  }
+  .mast-nav { justify-self: start; }
+  .brand-meta .translate-pop {
+    left: 0;
+    right: auto;
+  }
   .mast-refresh {
     background: var(--cream);
     color: var(--blue-deep);
@@ -1259,6 +1303,21 @@ footer a:hover { color: var(--gold); }
   gap: 0.3rem;
 }
 .translate-btn:hover { color: var(--gold); }
+.translate-btn.quiet {
+  font-size: 0.88rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+  padding: 0.15rem 0;
+}
+.translate-btn.quiet svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.translate-btn.quiet:hover { opacity: 1; }
+.brand-meta .translate-btn.quiet {
+  color: var(--cream);
+}
 .translate-pop {
   position: absolute;
   top: calc(100% + 0.45rem);
