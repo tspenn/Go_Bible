@@ -1,7 +1,7 @@
-import { commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
+import { boostedScriptureRefs, commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
 import { searchDictionary, type DictEntry } from './dictionary'
 import { SEED_NOTES } from './henry'
-import { bookName, searchVerses } from './kjv'
+import { bookName, findVerse, searchVerses, type Verse } from './kjv'
 import { searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
 import { SCOFIELD } from './scofield'
 
@@ -200,15 +200,20 @@ export async function searchStudy(q: string): Promise<StudyResults> {
   const notesTerms = commentarySearchTerms(q)
   await loadIndexes()
   const topics = searchTopics(q)
+  const pinned = boostedScriptureRefs(q)
+    .map((r) => findVerse(r.bookSlug, r.chapter, r.verse))
+    .filter((v): v is Verse => Boolean(v))
   const fromText = searchVerses(scriptureSearchTerms(q), 20)
-  const seen = new Set(fromText.map((v) => `${v.bookSlug}:${v.chapter}:${v.verse}`))
+  const seen = new Set(pinned.map((v) => `${v.bookSlug}:${v.chapter}:${v.verse}`))
+  const textExtra = fromText.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
+  for (const v of textExtra) seen.add(`${v.bookSlug}:${v.chapter}:${v.verse}`)
   const { verses: fromNave, reading } = await versesFromNaveTopics(
     topics.slice(0, 6).map((t) => t.slug),
     q,
     8,
   )
   const extra = fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
-  out.scripture = [...fromText, ...extra].map((v) => ({
+  out.scripture = [...pinned, ...textExtra, ...extra].map((v) => ({
     source: 'scripture',
     title: `${v.book} ${v.chapter}:${v.verse}`,
     detail: clip(v.text, 180),

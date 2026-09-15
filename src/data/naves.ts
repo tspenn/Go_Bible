@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { expandSearchTerms, nameMatchesTerm, skipTopicKeys } from '../lib/searchTerms'
+import { expandSearchTerms, nameMatchesQuery, nameMatchesTerm, skipTopicKeys } from '../lib/searchTerms'
 import { findBook, findVerse, parseRef, type Verse } from './kjv'
 import index from './naves-index.json' with { type: 'json' }
 
@@ -458,7 +458,7 @@ function isReadableTopic(slug: string, typed: string) {
   if (dump) {
     const n = dumpRefCount(dump)
     if (n === 0) return false
-    if (n > 80 && !nameMatchesTerm(dump.name, typed, true)) return false
+    if (n > 80 && !nameMatchesQuery(dump.name, typed)) return false
     return true
   }
   const seed = TOPICS.find((t) => t.slug === slug)
@@ -475,7 +475,9 @@ export async function versesFromNaveTopics(
   const hop: string[] = []
   for (const slug of unique) {
     const dump = dumpBySlug.get(slug)
-    if (dump && dumpRefCount(dump) === 0) hop.push(...dump.related)
+    if (dump && dumpRefCount(dump) === 0) {
+      hop.push(...dump.related.filter((s) => !skipTopicKeys(s)))
+    }
   }
   const extra = [...new Set(hop)].filter((s) => !unique.includes(s)).slice(0, 8)
   await Promise.all(extra.map((s) => ensureNavesTopic(s)))
@@ -485,8 +487,8 @@ export async function versesFromNaveTopics(
     const db = dumpBySlug.get(b)
     const na = da ? dumpRefCount(da) : 0
     const nb = db ? dumpRefCount(db) : 0
-    const aHuge = na > 80 && !nameMatchesTerm(naveTopicName(a), typed, true)
-    const bHuge = nb > 80 && !nameMatchesTerm(naveTopicName(b), typed, true)
+    const aHuge = na > 80 && !nameMatchesQuery(naveTopicName(a), typed)
+    const bHuge = nb > 80 && !nameMatchesQuery(naveTopicName(b), typed)
     if (aHuge !== bHuge) return aHuge ? 1 : -1
     const aEmpty = na === 0 && !TOPICS.some((t) => t.slug === a)
     const bEmpty = nb === 0 && !TOPICS.some((t) => t.slug === b)
@@ -498,7 +500,7 @@ export async function versesFromNaveTopics(
   for (const slug of ranked) {
     if (!isReadableTopic(slug, typed)) continue
     const name = dumpBySlug.get(slug)?.name ?? naveTopicName(slug)
-    if (!nameMatchesTerm(name, typed, true) && !hopSet.has(slug)) continue
+    if (!nameMatchesQuery(name, typed) && !hopSet.has(slug)) continue
     if (reading.some((r) => r.slug === slug)) continue
     reading.push({ slug, name })
     if (reading.length >= 3) break
@@ -518,7 +520,7 @@ export async function versesFromNaveTopics(
     }
     const dump = dumpBySlug.get(slug)
     if (!dump) continue
-    const tooBig = dumpRefCount(dump) > 80 && !nameMatchesTerm(dump.name, typed, true)
+    const tooBig = dumpRefCount(dump) > 80 && !nameMatchesQuery(dump.name, typed)
     if (tooBig) continue
     for (const ref of refsFromDump(dump, limit)) {
       if (pushVerse(verses, seen, findVerse(ref.bookSlug, ref.chapter, ref.verse), limit)) {

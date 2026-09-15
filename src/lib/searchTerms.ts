@@ -1,13 +1,32 @@
 /** Everyday search words → wording that actually appears in the Go-Bible text or Nave. */
 
+/** Comfort / hope wording that is actually in the Go-Bible text — not dumps of despair. */
+const LIFT_DEPRESSION = [
+  'hope in god',
+  'god of hope',
+  'god of all comfort',
+  'broken hearted',
+  'broken in heart',
+  'crushed spirit',
+  'heavily burdened',
+  'in nothing be anxious',
+  'casting all your worries',
+  'cast your burden',
+  'weeping may stay',
+  'hope',
+  'comfort',
+  'consolation',
+  'cheerfulness',
+]
+
 const TO_CORPUS: Record<string, string[]> = {
   worry: ['worries', 'worrying', 'anxious', 'anxiety', 'care'],
   worries: ['worry', 'anxious', 'anxiety', 'care'],
   worrying: ['worry', 'worries', 'anxious', 'anxiety', 'care'],
   anxious: ['anxiety', 'worry', 'worries', 'care'],
   anxiety: ['anxious', 'worry', 'worries', 'care'],
-  depression: ['despair', 'despondency', 'sorrow', 'grief', 'affliction'],
-  depressed: ['despair', 'despondency', 'sorrow', 'grief'],
+  depression: LIFT_DEPRESSION,
+  depressed: LIFT_DEPRESSION,
   lonely: ['desolate', 'forsaken'],
   loneliness: ['desolate', 'forsaken'],
   stress: ['distress', 'distressed', 'trouble', 'troubled'],
@@ -250,6 +269,42 @@ export function scriptureSearchTerms(q: string): string[] {
 /** Notes and commentary: keep “care” only when that is what the reader typed. */
 export function commentarySearchTerms(q: string): string[] {
   return dropBroad(q, expandSearchTerms(q))
+}
+
+/** Put these verses first. Literal hits for a few everyday words are all the wound, none of the help. */
+const LIFT_REFS: [string, number, number][] = [
+  ['psalms', 34, 18],
+  ['psalms', 42, 5],
+  ['psalms', 147, 3],
+  ['psalms', 30, 5],
+  ['psalms', 55, 22],
+  ['isaiah', 61, 1],
+  ['isaiah', 40, 31],
+  ['matthew', 11, 28],
+  ['john', 14, 27],
+  ['romans', 15, 13],
+  ['2-corinthians', 1, 3],
+  ['2-corinthians', 1, 4],
+  ['philippians', 4, 6],
+  ['1-peter', 5, 7],
+  ['revelation', 21, 4],
+]
+const SCRIPTURE_FIRST: Record<string, [string, number, number][]> = {
+  depression: LIFT_REFS,
+  depressed: LIFT_REFS,
+}
+
+export function boostedScriptureRefs(q: string): { bookSlug: string; chapter: number; verse: number }[] {
+  const n = q.trim().toLowerCase()
+  const rows = SCRIPTURE_FIRST[n]
+  if (!rows) return []
+  return rows.map(([bookSlug, chapter, verse]) => ({ bookSlug, chapter, verse }))
+}
+
+/** Topic names against the typed word and its expansions (so “depression” can hit Hope). */
+export function nameMatchesQuery(name: string, q: string) {
+  const terms = expandSearchTerms(q).filter((t) => t.length >= 2 && !t.includes(' '))
+  return terms.some((t, i) => nameMatchesTerm(name, t, i === 0))
 }
 
 export function hasWord(hay: string, term: string) {

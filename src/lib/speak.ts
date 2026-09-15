@@ -233,8 +233,61 @@ export function warmupVoices() {
   void loadVoices()
 }
 
+function hardCancel() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  speechSynthesis.cancel()
+}
+
+let keepAlive = 0
+
+function clearKeepAlive() {
+  if (!keepAlive) return
+  window.clearInterval(keepAlive)
+  keepAlive = 0
+}
+
+function armKeepAlive() {
+  if (typeof window === 'undefined' || keepAlive) return
+  keepAlive = window.setInterval(() => {
+    if (state.status !== 'playing') {
+      clearKeepAlive()
+      return
+    }
+    if (speechSynthesis.speaking || speechSynthesis.pending) return
+    speakNext(gen)
+  }, 1500)
+}
+
+/** Kill leftover Chrome utterances only when Listen is already idle or paused. */
+function hushZombies() {
+  if (state.status === 'playing') return
+  hardCancel()
+}
+
+/** If we are still supposed to be reading, pick the chapter back up after a tab switch. */
+function kickIfStalled() {
+  if (state.status !== 'playing') {
+    hushZombies()
+    return
+  }
+  if (speechSynthesis.speaking || speechSynthesis.pending) return
+  speakNext(gen)
+}
+
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hushZombies()
+    else kickIfStalled()
+  })
+  window.addEventListener('pageshow', kickIfStalled)
+  window.addEventListener('focus', kickIfStalled)
+  window.addEventListener('blur', hushZombies)
+  window.addEventListener('pagehide', hushZombies)
+}
+
 export function stopSpeak() {
   gen += 1
+  clearKeepAlive()
   if (current) {
     current.onend = null
     current.onerror = null
@@ -243,20 +296,31 @@ export function stopSpeak() {
   queue = []
   index = 0
   follow = null
-  if (typeof window !== 'undefined' && 'speechSynthesis' in window) speechSynthesis.cancel()
+  hardCancel()
   setState({ status: 'idle', verse: null })
 }
 
 export function pauseSpeak() {
   if (state.status !== 'playing') return
-  speechSynthesis.pause()
+  clearKeepAlive()
+  if (current) {
+    current.onend = null
+    current.onerror = null
+    current = null
+  }
+  hardCancel()
   setState({ status: 'paused' })
 }
 
 export function resumeSpeak() {
   if (state.status !== 'paused') return
-  speechSynthesis.resume()
+  if (!queue.length) {
+    stopSpeak()
+    return
+  }
   setState({ status: 'playing' })
+  armKeepAlive()
+  speakNext(gen)
 }
 
 function chapterItems(
@@ -302,6 +366,7 @@ function speakNext(token: number) {
     queue = []
     index = 0
     follow = null
+    clearKeepAlive()
     setState({ status: 'idle', verse: null })
     return
   }
@@ -314,15 +379,23 @@ function speakNext(token: number) {
   utter.voice = voice
   utter.onend = () => {
     if (token !== gen) return
+    if (state.status !== 'playing') return
     index += 1
     speakNext(token)
   }
-  utter.onerror = () => {
+  utter.onerror = (e) => {
     if (token !== gen) return
+    if (state.status !== 'playing') return
+    const err = 'error' in e ? String(e.error) : ''
+    // Pause/Stop cancel on purpose. Chrome also "interrupts" when you switch apps —
+    // keep going so Listen can read in the background.
+    if (err === 'canceled') return
+    if (err === 'interrupted' && typeof document !== 'undefined' && document.hidden) return
     index += 1
     speakNext(token)
   }
   current = utter
+  armKeepAlive()
   setState({
     status: 'playing',
     verse: item.verse,
@@ -330,6 +403,7 @@ function speakNext(token: number) {
   })
   window.setTimeout(() => {
     if (token !== gen) return
+    if (state.status !== 'playing') return
     speechSynthesis.speak(utter)
   }, 60)
 }
@@ -345,7 +419,7 @@ async function beginSpeak(nextQueue: { verse: number | null; text: string }[]) {
   }
   queue = []
   index = 0
-  speechSynthesis.cancel()
+  hardCancel()
   const voices = await loadVoices()
   if (token !== gen) return
   picked = pickUsVoice(voices, listenGender)
