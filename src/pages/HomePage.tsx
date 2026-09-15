@@ -5,14 +5,16 @@ import { TAGLINE } from '../data/starters'
 export function HomePage() {
   return (
     <article className="page">
-      <h1>Walking By Faith</h1>
+      <div className="page-head">
+        <h1>Walking By Faith</h1>
+        <ShareArrow
+          label="Share this app"
+          title="Walking By Faith"
+          text={TAGLINE}
+          url={sharePageUrl('/')}
+        />
+      </div>
       <p className="lead">{TAGLINE}</p>
-      <ShareArrow
-        label="Share this app"
-        title="Walking By Faith"
-        text={TAGLINE}
-        url={sharePageUrl('/')}
-      />
       <BookPicker />
     </article>
   )
