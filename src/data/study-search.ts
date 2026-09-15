@@ -2,7 +2,7 @@ import { commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/
 import { searchDictionary, type DictEntry } from './dictionary'
 import { SEED_NOTES } from './henry'
 import { bookName, searchVerses } from './kjv'
-import { searchTopics, versesFromNaveTopics } from './naves'
+import { searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
 import { SCOFIELD } from './scofield'
 
 export type StudySource = 'scripture' | 'naves' | 'scofield' | 'henry' | 'tsk' | 'easton'
@@ -14,7 +14,7 @@ export type StudyHit = {
   href: string
 }
 
-export type StudyResults = Record<StudySource, StudyHit[]>
+export type StudyResults = Record<StudySource, StudyHit[]> & { naveMore: NaveReading[] }
 
 type ScoRow = { t: string; b: string; c: number; v: number; s: string }
 type HenryRow = { b: string; c: number; v: number; r: string; s: string; h: string }
@@ -27,6 +27,7 @@ const empty = (): StudyResults => ({
   henry: [],
   tsk: [],
   easton: [],
+  naveMore: [],
 })
 
 function clip(s: string, n: number) {
@@ -201,7 +202,7 @@ export async function searchStudy(q: string): Promise<StudyResults> {
   const topics = searchTopics(q)
   const fromText = searchVerses(scriptureSearchTerms(q), 20)
   const seen = new Set(fromText.map((v) => `${v.bookSlug}:${v.chapter}:${v.verse}`))
-  const fromNave = await versesFromNaveTopics(
+  const { verses: fromNave, reading } = await versesFromNaveTopics(
     topics.slice(0, 6).map((t) => t.slug),
     q,
     8,
@@ -213,6 +214,7 @@ export async function searchStudy(q: string): Promise<StudyResults> {
     detail: clip(v.text, 180),
     href: `/bible/${v.bookSlug}/${v.chapter}/${v.verse}`,
   }))
+  out.naveMore = reading
   out.naves = topics.slice(0, 20).map((t) => ({
     source: 'naves',
     title: t.name,

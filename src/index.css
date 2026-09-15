@@ -511,6 +511,20 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   flex-direction: column;
 }
 .topic-list li span { font-size: 0.95rem; opacity: 0.8; }
+.nave-see-more {
+  list-style: none;
+  padding: 0.85rem 0 0;
+  margin: 0.35rem 0 0;
+  border-top: 1px solid #e6e0d6;
+}
+.nave-see-more li { padding: 0.4rem 0; }
+.nave-see-more a {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.4rem;
+  align-items: baseline;
+}
+.nave-see-more span { font-size: 0.95rem; opacity: 0.8; }
 .hit-title {
   color: var(--blue-deep);
   font-weight: 600;
@@ -1227,4 +1241,27 @@ body { top: 0 !important; position: static !important; }
   font-size: 0.68rem;
   line-height: 1.15;
   letter-spacing: 0;
+}
+
+@media (min-width: 800px) {
+  :root {
+    --dock-h: 5.4rem;
+  }
+  .dock {
+    grid-template-columns: repeat(5, minmax(7.5rem, 12rem));
+    justify-content: center;
+    column-gap: 0.35rem;
+    padding: 0 1.25rem;
+  }
+  .dock a {
+    font-size: 1.2rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.45rem 0.6rem;
+  }
+  .dock a.dock-mag {
+    font-size: 1.05rem;
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+  }
 }

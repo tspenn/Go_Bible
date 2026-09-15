@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from '../App'
 import { bookName } from '../data/kjv'
-import { featuredOneWords, oneWordSuggestions } from '../data/naves'
+import { featuredOneWords, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import {
   searchStudy,
@@ -46,6 +46,22 @@ function HitList({ hits }: { hits: StudyHit[] }) {
         <li key={`${h.source}-${h.href}-${h.title}-${i}`}>
           {h.href ? <Link to={h.href}>{h.title}</Link> : <span className="hit-title">{h.title}</span>}
           {h.detail ? <span>{h.detail}</span> : null}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function NaveSeeMore({ items }: { items: NaveReading[] }) {
+  if (items.length === 0) return null
+  return (
+    <ul className="nave-see-more">
+      {items.map((t) => (
+        <li key={t.slug}>
+          <Link to={`/topics/${t.slug}`}>
+            See more
+            <span> in {t.name} — all the verses, in Nave’s order</span>
+          </Link>
         </li>
       ))}
     </ul>
@@ -108,7 +124,9 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   }
 
   const searching = q.trim().length >= 2
-  const total = results ? STUDY_ORDER.reduce((n, src) => n + results[src].length, 0) : 0
+  const total = results
+    ? STUDY_ORDER.reduce((n, src) => n + results[src].length, 0) + results.naveMore.length
+    : 0
   const showList = suggestOpen && suggestions.length > 0
 
   return (
@@ -177,14 +195,17 @@ export function TopicsPage({ search = '' }: { search?: string }) {
           {loading && !results ? <p className="lead">Searching…</p> : null}
           {results && total === 0 ? <p>No matching verses or topics.</p> : null}
           {results
-            ? STUDY_ORDER.map((src) =>
-                results[src].length > 0 ? (
+            ? STUDY_ORDER.map((src) => {
+                const more = src === 'scripture' ? results.naveMore : []
+                if (results[src].length === 0 && more.length === 0) return null
+                return (
                   <section key={src}>
                     <h2>{STUDY_LABELS[src]}</h2>
                     <HitList hits={results[src]} />
+                    {src === 'scripture' ? <NaveSeeMore items={more} /> : null}
                   </section>
-                ) : null,
-              )
+                )
+              })
             : null}
         </>
       ) : (

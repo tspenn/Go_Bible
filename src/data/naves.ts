@@ -451,7 +451,25 @@ function pushVerse(verses: Verse[], seen: Set<string>, found: Verse | undefined,
 }
 
 /** Verses Nave lists under matching topics. Follows empty “see also” heads one hop. */
-export async function versesFromNaveTopics(slugs: string[], q: string, limit = 8): Promise<Verse[]> {
+export type NaveReading = { slug: string; name: string }
+
+function isReadableTopic(slug: string, typed: string) {
+  const dump = dumpBySlug.get(slug)
+  if (dump) {
+    const n = dumpRefCount(dump)
+    if (n === 0) return false
+    if (n > 80 && !nameMatchesTerm(dump.name, typed, true)) return false
+    return true
+  }
+  const seed = TOPICS.find((t) => t.slug === slug)
+  return Boolean(seed && seed.refs.length)
+}
+
+export async function versesFromNaveTopics(
+  slugs: string[],
+  q: string,
+  limit = 8,
+): Promise<{ verses: Verse[]; reading: NaveReading[] }> {
   const unique = [...new Set(slugs.filter(Boolean))].slice(0, 8)
   await Promise.all(unique.map((s) => ensureNavesTopic(s)))
   const hop: string[] = []
@@ -475,6 +493,16 @@ export async function versesFromNaveTopics(slugs: string[], q: string, limit = 8
     if (aEmpty !== bEmpty) return aEmpty ? 1 : -1
     return 0
   })
+  const hopSet = new Set(hop)
+  const reading: NaveReading[] = []
+  for (const slug of ranked) {
+    if (!isReadableTopic(slug, typed)) continue
+    const name = dumpBySlug.get(slug)?.name ?? naveTopicName(slug)
+    if (!nameMatchesTerm(name, typed, true) && !hopSet.has(slug)) continue
+    if (reading.some((r) => r.slug === slug)) continue
+    reading.push({ slug, name })
+    if (reading.length >= 3) break
+  }
   const verses: Verse[] = []
   const seen = new Set<string>()
   for (const slug of ranked) {
@@ -483,7 +511,9 @@ export async function versesFromNaveTopics(slugs: string[], q: string, limit = 8
       for (const r of seed.refs) {
         const p = parseRef(r)
         if (!p) continue
-        if (pushVerse(verses, seen, findVerse(p.bookSlug, p.chapter, p.verse), limit)) return verses
+        if (pushVerse(verses, seen, findVerse(p.bookSlug, p.chapter, p.verse), limit)) {
+          return { verses, reading }
+        }
       }
     }
     const dump = dumpBySlug.get(slug)
@@ -491,8 +521,10 @@ export async function versesFromNaveTopics(slugs: string[], q: string, limit = 8
     const tooBig = dumpRefCount(dump) > 80 && !nameMatchesTerm(dump.name, typed, true)
     if (tooBig) continue
     for (const ref of refsFromDump(dump, limit)) {
-      if (pushVerse(verses, seen, findVerse(ref.bookSlug, ref.chapter, ref.verse), limit)) return verses
+      if (pushVerse(verses, seen, findVerse(ref.bookSlug, ref.chapter, ref.verse), limit)) {
+        return { verses, reading }
+      }
     }
   }
-  return verses
+  return { verses, reading }
 }
