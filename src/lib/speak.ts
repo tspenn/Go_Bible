@@ -72,7 +72,12 @@ const MALE_HINTS = [
   'roger',
   'george',
   'richard',
-  'male',
+  'daniel',
+  'brian',
+  'arthur',
+  'thomas',
+  'michael',
+  'matthew',
 ]
 const FEMALE_HINTS = [
   'zira',
@@ -92,8 +97,59 @@ const FEMALE_HINTS = [
   'moira',
   'fiona',
   'victoria',
-  'female',
 ]
+
+function voiceBlob(voice: SpeechSynthesisVoice) {
+  return `${voice.lang} ${voice.name} ${voice.voiceURI}`.toLowerCase()
+}
+
+function isGoogleUsEnglish(voice: SpeechSynthesisVoice) {
+  return /google\s*us\s*english/i.test(`${voice.name} ${voice.voiceURI}`)
+}
+
+function namedGender(voice: SpeechSynthesisVoice): ListenGender | null {
+  const blob = voiceBlob(voice)
+  if (/\bfemale\b/.test(blob) || isGoogleUsEnglish(voice)) return 'female'
+  if (/\bmale\b/.test(blob)) return 'male'
+  if (FEMALE_HINTS.some((h) => blob.includes(h))) return 'female'
+  if (MALE_HINTS.some((h) => blob.includes(h))) return 'male'
+  return null
+}
+
+function scoreVoice(voice: SpeechSynthesisVoice, want: ListenGender) {
+  const g = namedGender(voice)
+  let n = 0
+  if (g === want) n += 100
+  if (g && g !== want) n -= 250
+  if (isUs(voice)) n += 35
+  if (isBritish(voice)) n -= 15
+  if (want === 'male' && isGoogleUsEnglish(voice)) n -= 80
+  if (voice.localService && g === want) n += 6
+  return n
+}
+
+function pickUsVoice(voices: SpeechSynthesisVoice[], want: ListenGender) {
+  const english = voices.filter((v) => v.lang.toLowerCase().startsWith('en'))
+  const pool = english.length ? english : voices
+  if (!pool.length) return null
+  let best = pool[0]
+  let bestScore = -Infinity
+  for (const voice of pool) {
+    const n = scoreVoice(voice, want)
+    if (n > bestScore) {
+      best = voice
+      bestScore = n
+    }
+  }
+  return best ?? null
+}
+
+function utterRate(voice: SpeechSynthesisVoice | null) {
+  if (listenGender === 'female') return 0.7
+  const name = voice?.name.toLowerCase() ?? ''
+  if (name.includes('google')) return 0.82
+  return 0.9
+}
 
 const GENDER_KEY = 'go-bible-listen-gender'
 const genderListeners = new Set<() => void>()
@@ -118,6 +174,7 @@ export function getListenGender() {
 
 export function setListenGender(next: ListenGender) {
   listenGender = next
+  picked = null
   try {
     localStorage.setItem(GENDER_KEY, next)
   } catch {
@@ -133,36 +190,6 @@ export function subscribeListenGender(fn: () => void) {
 
 export function useListenGender() {
   return useSyncExternalStore(subscribeListenGender, getListenGender, () => 'male' as ListenGender)
-}
-
-function namedGender(voice: SpeechSynthesisVoice): ListenGender | null {
-  const name = voice.name.toLowerCase()
-  if (MALE_HINTS.some((h) => name.includes(h))) return 'male'
-  if (FEMALE_HINTS.some((h) => name.includes(h))) return 'female'
-  return null
-}
-
-function pickUsVoice(voices: SpeechSynthesisVoice[], want: ListenGender) {
-  const english = voices.filter((v) => v.lang.toLowerCase().startsWith('en'))
-  const us = english.filter(isUs)
-  const notBritish = english.filter((v) => !isBritish(v))
-  const pool = us.length ? us : notBritish.length ? notBritish : english
-  const matched = pool.filter((v) => namedGender(v) === want && !isBritish(v))
-  if (matched.length) return matched.find(isUs) ?? matched[0]
-
-  if (want === 'female') {
-    const google = pool.find((v) => v.name.toLowerCase().includes('google us english') && !isBritish(v))
-    if (google) return google
-  }
-
-  const rest = pool.filter((v) => {
-    if (isBritish(v)) return false
-    const g = namedGender(v)
-    if (g && g !== want) return false
-    if (want === 'male' && v.name.toLowerCase().includes('google us english')) return false
-    return true
-  })
-  return rest.find(isUs) ?? rest[0] ?? pool.find((v) => !isBritish(v)) ?? pool[0] ?? null
 }
 
 function loadVoices(): Promise<SpeechSynthesisVoice[]> {
@@ -217,7 +244,7 @@ function speakNext(token: number) {
   const utter = new SpeechSynthesisUtterance(item.text)
   utter.voice = picked
   utter.lang = picked?.lang || 'en-US'
-  utter.rate = 0.95
+  utter.rate = utterRate(picked)
   utter.pitch = 1
   utter.onend = () => {
     if (token !== gen) return
@@ -235,7 +262,10 @@ function speakNext(token: number) {
     verse: item.verse,
     voiceName: picked?.name ?? null,
   })
-  speechSynthesis.speak(utter)
+  window.setTimeout(() => {
+    if (token !== gen) return
+    speechSynthesis.speak(utter)
+  }, 60)
 }
 
 export async function startChapterSpeak(opts: {
