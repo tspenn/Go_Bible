@@ -29,35 +29,40 @@ export function ListenControl({
 
   const label = fromVerse && fromVerse > 1 ? `Listen from verse ${fromVerse}` : 'Listen to this chapter'
 
+  const listening = speak.status !== 'idle'
+
   return (
-    <div className="listen-row">
-      {speak.status === 'idle' && (
-        <button
-          type="button"
-          className="listen-btn"
-          onClick={() => void startChapterSpeak({ bookName, chapter, verses, fromVerse })}
-        >
-          {label}
-        </button>
-      )}
-      {speak.status === 'playing' && (
-        <button type="button" className="listen-btn" onClick={pauseSpeak}>
-          Pause
-        </button>
-      )}
-      {speak.status === 'paused' && (
-        <button type="button" className="listen-btn" onClick={resumeSpeak}>
-          Resume
-        </button>
-      )}
-      {speak.status !== 'idle' && (
-        <button type="button" className="listen-btn quiet" onClick={stopSpeak}>
-          Stop
-        </button>
-      )}
-      {speak.voiceName && speak.status !== 'idle' && (
-        <span className="listen-voice">{speak.voiceName}</span>
-      )}
-    </div>
+    <>
+      {listening ? <div className="listen-row-slot" aria-hidden="true" /> : null}
+      <div className={`listen-row${listening ? ' listening' : ''}`}>
+        {speak.status === 'idle' && (
+          <button
+            type="button"
+            className="listen-btn"
+            onClick={() => void startChapterSpeak({ bookName, chapter, verses, fromVerse })}
+          >
+            {label}
+          </button>
+        )}
+        {speak.status === 'playing' && (
+          <button type="button" className="listen-btn" onClick={pauseSpeak}>
+            Pause
+          </button>
+        )}
+        {speak.status === 'paused' && (
+          <button type="button" className="listen-btn" onClick={resumeSpeak}>
+            Resume
+          </button>
+        )}
+        {listening && (
+          <button type="button" className="listen-btn quiet" onClick={stopSpeak}>
+            Stop
+          </button>
+        )}
+        {speak.voiceName && listening && (
+          <span className="listen-voice">{speak.voiceName}</span>
+        )}
+      </div>
+    </>
   )
 }
