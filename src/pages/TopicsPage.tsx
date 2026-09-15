@@ -44,7 +44,7 @@ function HitList({ hits }: { hits: StudyHit[] }) {
   return (
     <ul className="topic-list">
       {hits.map((h, i) => {
-        const sco = h.source === 'scofield' && h.full ? scofieldHrefParts(h.href) : null
+        const sco = h.source === 'scofield' && h.full && !h.more ? scofieldHrefParts(h.href) : null
         return (
           <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
             {h.more ? (
