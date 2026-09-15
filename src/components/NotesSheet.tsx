@@ -27,10 +27,10 @@ import { ROBERTSON_SOURCE, type RobertsonNote } from '../data/robertson'
 import {
   formatScofieldRef,
   SCOFIELD_SOURCE,
-  scofieldBodyBits,
   scofieldHref,
   type ScofieldNote,
 } from '../data/scofield'
+import { ScofieldProse } from './ScofieldProse'
 
 export type SheetFocus = 'scofield' | 'henry' | 'tsk' | 'dictionary' | 'topics' | 'robertson' | 'mine' | null
 
@@ -144,17 +144,7 @@ export function NotesSheet({
               <span className="callout-label">{n.letter}</span>
               {n.heading ? ` ${n.heading}` : ''}
             </h3>
-            <p>
-              {scofieldBodyBits(n.body, n.bookSlug, n.chapter).map((bit, i) =>
-                bit.type === 'ref' ? (
-                  <Link key={i} to={bit.href}>
-                    {bit.text}
-                  </Link>
-                ) : (
-                  <span key={i}>{bit.text}</span>
-                ),
-              )}
-            </p>
+            <ScofieldProse body={n.body} bookSlug={n.bookSlug} chapter={n.chapter} />
             {n.seeAlso.length > 0 && (
               <>
                 <p className="see-also">

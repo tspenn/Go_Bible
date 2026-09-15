@@ -3,6 +3,7 @@ import { Link, navigate, replacePath } from '../App'
 import { bookName } from '../data/kjv'
 import { featuredOneWords, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
+import { ScofieldProse, scofieldHrefParts } from '../components/ScofieldProse'
 import {
   searchStudy,
   STUDY_LABELS,
@@ -42,23 +43,40 @@ function HitList({ hits }: { hits: StudyHit[] }) {
   if (hits.length === 0) return null
   return (
     <ul className="topic-list">
-      {hits.map((h, i) => (
-        <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
-          {h.more ? (
-            <span className="hit-title">{h.title}</span>
-          ) : h.href ? (
-            <Link to={h.href}>{h.title}</Link>
-          ) : (
-            <span className="hit-title">{h.title}</span>
-          )}
-          {h.detail ? <span className={h.full ? 'topic-note' : undefined}>{h.detail}</span> : null}
-          {h.more ? (
-            <Link className="topic-more" to={h.more.href}>
-              {h.more.label}
-            </Link>
-          ) : null}
-        </li>
-      ))}
+      {hits.map((h, i) => {
+        const sco = h.source === 'scofield' && h.full ? scofieldHrefParts(h.href) : null
+        return (
+          <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
+            {h.more ? (
+              <span className="hit-title">{h.title}</span>
+            ) : h.href ? (
+              <Link to={h.href}>{h.title}</Link>
+            ) : (
+              <span className="hit-title">{h.title}</span>
+            )}
+            {sco ? (
+              <ScofieldProse body={h.detail} bookSlug={sco.bookSlug} chapter={sco.chapter} />
+            ) : h.detail ? (
+              h.detail.includes('\n\n') ? (
+                <div className="topic-prose">
+                  {h.detail.split(/\n{2,}/).map((para, pi) => (
+                    <p key={pi} className="topic-note">
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <span className={h.full ? 'topic-note' : undefined}>{h.detail}</span>
+              )
+            ) : null}
+            {h.more ? (
+              <Link className="topic-more" to={h.more.href}>
+                {h.more.label}
+              </Link>
+            ) : null}
+          </li>
+        )
+      })}
     </ul>
   )
 }

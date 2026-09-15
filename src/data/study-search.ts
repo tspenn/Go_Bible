@@ -371,20 +371,25 @@ async function chipScofieldSummaries(q: string): Promise<StudyHit[]> {
   const rows = CHIP_SCOFIELD_SUMMARY[q.trim().toLowerCase()]
   if (!rows?.length) return []
   await Promise.all(rows.map((r) => ensureScofieldBook(r.bookSlug)))
-  return rows.map((r) => {
+  const hits: StudyHit[] = []
+  for (const r of rows) {
+    const notes = notesForVerse(r.bookSlug, r.chapter, r.verse)
+    const want = r.heading.toLowerCase()
+    const match = notes.find((n) => (n.heading || n.kjvPhrase).toLowerCase() === want)
     const href = verseHref(r.bookSlug, r.chapter, r.verse, 'scofield')
-    return {
-      source: 'scofield' as const,
+    hits.push({
+      source: 'scofield',
       title: r.title,
-      detail: r.blurb,
+      detail: match?.body || r.blurb,
       href,
       full: true,
       more: {
         href,
-        label: `Read the full Summary · ${verseLabel(r.bookSlug, r.chapter, r.verse)}`,
+        label: `Open with the verse · ${verseLabel(r.bookSlug, r.chapter, r.verse)}`,
       },
-    }
-  })
+    })
+  }
+  return hits
 }
 
 function scoHit(title: string, bookSlug: string, chapter: number, verse: number, body: string, full: boolean): StudyHit {

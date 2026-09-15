@@ -119,6 +119,38 @@ export function scofieldBodyBits(
   return bits
 }
 
+/** Break a 1917 Scofield note into readable paragraphs at (1) (a) I. markers. */
+export function scofieldParagraphs(body: string): string[] {
+  const t = body.replace(/\r\n/g, '\n').trim()
+  if (!t) return []
+  if (/\n{2,}/.test(t)) {
+    return t
+      .split(/\n{2,}/)
+      .map((s) => tidyScofieldLine(s))
+      .filter(Boolean)
+  }
+  const flat = tidyScofieldLine(t.replace(/\s+/g, ' '))
+  const chunks = flat.split(
+    /(?=\([0-9]+\)\s)|(?=\([a-z]\)\s+[A-Z])|(?=\b[IVX]{1,4}\.\s+[A-Z])/,
+  )
+  return chunks.map((s) => s.trim()).filter(Boolean)
+}
+
+export function scofieldPointClass(para: string) {
+  if (/^\([a-z]\)\s/.test(para)) return 'sco-sub'
+  if (/^\([0-9]+\)\s/.test(para) || /^[IVX]{1,4}\.\s/.test(para)) return 'sco-major'
+  return undefined
+}
+
+function tidyScofieldLine(s: string) {
+  return s
+    .replace(/\s+/g, ' ')
+    .replace(/\s+;/g, ';')
+    .replace(/;\s*;/g, ';')
+    .replace(/\s+,/g, ',')
+    .trim()
+}
+
 export const SCOFIELD_SOURCE = 'Scofield Reference Bible notes, 1917 (public domain).'
 
 let audited = false

@@ -636,6 +636,24 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   line-height: 1.55;
   max-width: 42rem;
 }
+.scofield-prose p,
+.topic-prose p {
+  margin: 0.85em 0 0;
+  line-height: 1.62;
+  max-width: 42rem;
+}
+.scofield-prose p:first-child,
+.topic-prose p:first-child {
+  margin-top: 0.25em;
+}
+.scofield-prose p.sco-sub {
+  padding-left: 1.15rem;
+}
+.topic-list .scofield-prose p,
+.topic-prose p.topic-note {
+  opacity: 1;
+  font-size: 1.02rem;
+}
 .topic-more {
   margin-top: 0.35rem;
   font-size: 0.95rem;
