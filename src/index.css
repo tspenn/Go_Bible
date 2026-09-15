@@ -184,7 +184,7 @@ main { flex: 1; padding: 2.5rem 1.5rem 3rem; }
 .page { max-width: 42rem; margin: 0 auto; }
 .page.reading { max-width: 46rem; }
 .page.reading.with-notes {
-  max-width: 72rem;
+  max-width: 88rem;
 }
 
 .eyebrow {
@@ -1208,7 +1208,12 @@ a.tsk-go:active {
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin: -1rem -1.15rem 0.75rem;
+  padding: 1rem 1.15rem 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
 }
 .notes-sheet-tools {
   display: flex;
@@ -1312,14 +1317,16 @@ a.tsk-go:active {
     z-index: 15;
     left: 0;
     right: 0;
+    top: 5dvh;
     bottom: calc(var(--chrome-h) + env(safe-area-inset-bottom, 0));
-    max-height: 58vh;
+    max-height: none;
     overflow: auto;
     margin: 0;
     border-radius: 0.85rem 0.85rem 0 0;
     box-shadow: 0 -8px 24px rgba(61, 61, 61, 0.12);
   }
   .app.reading-focus .notes-sheet {
+    top: 4dvh;
     bottom: env(safe-area-inset-bottom, 0);
   }
 }
@@ -1327,7 +1334,7 @@ a.tsk-go:active {
 @media (min-width: 800px) {
   .page.reading.with-notes {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-columns: minmax(16rem, 0.7fr) minmax(24rem, 1.3fr);
     gap: 1.75rem;
     align-items: start;
   }
@@ -1336,7 +1343,7 @@ a.tsk-go:active {
     position: sticky;
     top: 1rem;
     margin-top: 0;
-    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
     overflow: auto;
   }
 }
