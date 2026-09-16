@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '../App'
 import { ShareArrow, sharePageUrl } from './ShareArrow'
-import { linkBodyBits, type DictEntry } from '../data/dictionary'
+import { type DictEntry } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
 import {
   isBookmarked,
@@ -30,6 +30,7 @@ import {
   scofieldHref,
   type ScofieldNote,
 } from '../data/scofield'
+import { HenryProse } from './HenryProse'
 import { ScofieldProse } from './ScofieldProse'
 
 export type SheetFocus = 'scofield' | 'henry' | 'tsk' | 'dictionary' | 'topics' | 'robertson' | 'mine' | null
@@ -184,35 +185,12 @@ export function NotesSheet({
                   ? ` (on ${n.range})`
                   : ''}
             </h3>
-            {n.body.split(/\n{2,}/).map((para, pi) => (
-              <p key={pi}>
-                {linkBodyBits(para, n.bookSlug, n.chapter).map((bit, i) => {
-                  if (bit.type === 'ref') {
-                    return (
-                      <Link key={i} to={bit.href}>
-                        {bit.text}
-                      </Link>
-                    )
-                  }
-                  if (bit.type === 'dict') {
-                    return (
-                      <button
-                        key={i}
-                        type="button"
-                        className="dict-hit"
-                        onClick={(e) => {
-                          const box = e.currentTarget.getBoundingClientRect()
-                          onDictName?.(bit.entry, box.left, box.bottom)
-                        }}
-                      >
-                        {bit.text}
-                      </button>
-                    )
-                  }
-                  return <span key={i}>{bit.text}</span>
-                })}
-              </p>
-            ))}
+            <HenryProse
+              body={n.body}
+              bookSlug={n.bookSlug}
+              chapter={n.chapter}
+              onDictName={onDictName}
+            />
           </div>
         ))}
       </section>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '../App'
-import { linkBodyBits } from '../data/dictionary'
 import { HENRY_SOURCE, type HenryNote } from '../data/henry'
+import { HenryProse } from './HenryProse'
 import {
   addHighlight,
   addNote,
@@ -299,19 +299,7 @@ export function MarkMenu({
                     ? ` (on ${n.range})`
                     : ''}
               </p>
-              {n.body.split(/\n{2,}/).map((para, pi) => (
-                <p key={pi} className="strongs-gloss">
-                  {linkBodyBits(para, n.bookSlug, n.chapter).map((bit, i) =>
-                    bit.type === 'ref' ? (
-                      <Link key={i} to={bit.href}>
-                        {bit.text}
-                      </Link>
-                    ) : (
-                      <span key={i}>{bit.text}</span>
-                    ),
-                  )}
-                </p>
-              ))}
+              <HenryProse body={n.body} bookSlug={n.bookSlug} chapter={n.chapter} />
             </div>
           ))}
           <button type="button" className="mark-back" onClick={() => setScreen('choose')}>

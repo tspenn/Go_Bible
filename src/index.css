@@ -637,19 +637,34 @@ h2 { font-size: 1.6rem; margin: 2rem 0 0.75rem; }
   max-width: 42rem;
 }
 .scofield-prose p,
+.henry-prose p,
 .topic-prose p {
   margin: 0.85em 0 0;
   line-height: 1.62;
   max-width: 42rem;
 }
 .scofield-prose p:first-child,
+.henry-prose p:first-child,
 .topic-prose p:first-child {
   margin-top: 0.25em;
 }
 .scofield-prose p.sco-sub {
   padding-left: 1.15rem;
 }
+.henry-prose p.hen-major {
+  margin-top: 1.15em;
+}
+.henry-prose p.hen-major:first-child {
+  margin-top: 0.25em;
+}
+.henry-prose p.hen-point {
+  padding-left: 1.05rem;
+}
+.henry-prose p.hen-sub {
+  padding-left: 1.85rem;
+}
 .topic-list .scofield-prose p,
+.topic-list .henry-prose p,
 .topic-prose p.topic-note {
   opacity: 1;
   font-size: 1.02rem;
@@ -882,6 +897,10 @@ button.callout.rwp-callout:hover {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
   line-height: 1.45;
+}
+.strongs-card .henry-prose p {
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 .strongs-src {
   margin: 0 0 0.75rem;

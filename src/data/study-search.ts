@@ -419,7 +419,7 @@ function henryHit(bookSlug: string, chapter: number, verse: number, range: strin
   return {
     source: 'henry',
     title: `${verseLabel(bookSlug, chapter, verse)}${extra}`,
-    detail: plain(body),
+    detail: full ? body : clip(body, 180),
     href: verseHref(bookSlug, chapter, verse, 'henry'),
     full,
     attribution: HENRY_SOURCE,

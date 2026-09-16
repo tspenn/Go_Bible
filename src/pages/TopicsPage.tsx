@@ -4,6 +4,7 @@ import { bookName } from '../data/kjv'
 import { featuredOneWords, NAVES_SOURCE, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import { ScofieldProse, scofieldHrefParts } from '../components/ScofieldProse'
+import { HenryProse } from '../components/HenryProse'
 import {
   searchStudy,
   STUDY_LABELS,
@@ -45,6 +46,7 @@ function HitList({ hits, hideTitle }: { hits: StudyHit[]; hideTitle?: boolean })
     <ul className="topic-list">
       {hits.map((h, i) => {
         const sco = h.source === 'scofield' && h.full && !h.more ? scofieldHrefParts(h.href) : null
+        const hen = h.source === 'henry' && h.full && !h.more ? scofieldHrefParts(h.href) : null
         return (
           <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
             {hideTitle ? null : h.more ? (
@@ -56,6 +58,8 @@ function HitList({ hits, hideTitle }: { hits: StudyHit[]; hideTitle?: boolean })
             )}
             {sco ? (
               <ScofieldProse body={h.detail} bookSlug={sco.bookSlug} chapter={sco.chapter} />
+            ) : hen ? (
+              <HenryProse body={h.detail} bookSlug={hen.bookSlug} chapter={hen.chapter} />
             ) : h.detail ? (
               h.detail.includes('\n\n') ? (
                 <div className="topic-prose">
