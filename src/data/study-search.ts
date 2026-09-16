@@ -385,10 +385,28 @@ function chipBlurbs(q: string): StudyHit[] {
   }))
 }
 
+function asHeading(s: string): string {
+  const t = s.replace(/\s+/g, ' ').trim()
+  if (!t) return t
+  const small = new Set(['a', 'an', 'the', 'and', 'or', 'nor', 'of', 'for', 'to', 'in', 'on', 'by', 'at', 'as', 'from', 'with'])
+  const words = t.split(' ')
+  return words
+    .map((w, i) => {
+      if (/^(LORD|GOD|I+)$/.test(w)) return w
+      if (/^[A-Z]/.test(w) && /[a-z]/.test(w.slice(1)) && i > 0) return w
+      const lower = w.toLowerCase()
+      const isFirst = i === 0
+      const isLast = i === words.length - 1
+      if (!isFirst && !isLast && small.has(lower)) return lower
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
+    .join(' ')
+}
+
 function scoHit(title: string, bookSlug: string, chapter: number, verse: number, body: string, full: boolean): StudyHit {
   return {
     source: 'scofield',
-    title: `${title} · ${verseLabel(bookSlug, chapter, verse)}`,
+    title: `${asHeading(title)} · ${verseLabel(bookSlug, chapter, verse)}`,
     detail: plain(body),
     href: verseHref(bookSlug, chapter, verse, 'scofield'),
     full,
@@ -514,7 +532,11 @@ async function pinTeachingNotes(
   if (!teach) return { sco, hen }
   const pinSco = pin.sco !== false
   const pinHen = pin.hen !== false
-  const { bookSlug, chapter, verse, label } = teach.scofield
+  const chip = CHIP_SCOFIELD_SUMMARY[q.trim().toLowerCase()]?.[0]
+  const bookSlug = chip?.bookSlug ?? teach.scofield.bookSlug
+  const chapter = chip?.chapter ?? teach.scofield.chapter
+  const verse = chip?.verse ?? teach.scofield.verse
+  const label = chip?.heading ?? teach.scofield.label
   await Promise.all([ensureScofieldBook(bookSlug), ensureHenryBook(bookSlug)])
   if (pinSco) {
     const want = label.toLowerCase()

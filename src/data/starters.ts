@@ -22,10 +22,10 @@ export type StarterTopic = {
 export const STARTER_TOPICS: StarterTopic[] = [
   {
     id: 'jesus',
-    title: 'Jesus (Who is Jesus)',
+    title: 'Who Is Jesus?',
     naveSlug: 'jesus-the-christ',
     naveName: 'Jesus, the Christ',
-    scofield: { bookSlug: 'john', chapter: 1, verse: 1, label: 'the Word' },
+    scofield: { bookSlug: 'john', chapter: 20, verse: 28, label: 'My Lord and My God' },
   },
   {
     id: 'salvation',
@@ -57,7 +57,7 @@ export const STARTER_TOPICS: StarterTopic[] = [
   },
   {
     id: 'believe',
-    title: 'Why Believe',
+    title: 'Why Believe?',
     naveSlug: 'gospel',
     naveName: 'Gospel',
     scofield: { bookSlug: 'john', chapter: 6, verse: 69, label: 'we believe' },
@@ -71,7 +71,7 @@ export const STARTER_TOPICS: StarterTopic[] = [
   },
   {
     id: 'judgment',
-    title: 'Judgement',
+    title: 'Judgment',
     naveSlug: 'judgment',
     naveName: 'Judgment',
     scofield: { bookSlug: 'john', chapter: 12, verse: 31, label: 'judgments' },
