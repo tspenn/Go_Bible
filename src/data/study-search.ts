@@ -99,7 +99,7 @@ const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
       heading: 'salvation',
       title: 'Salvation',
       blurb:
-        'Salvation is the great gospel word. It takes in all that God does for the sinner: he is forgiven, declared right, bought back, made holy, and at last brought into glory. It has three tenses. The believer has been saved from sin’s guilt, is being kept in daily life, and will be saved when Christ appears.',
+        'Salvation is the great gospel word. It takes in all that God does for sinners: they are forgiven, declared right, bought back, made holy, and at last brought into glory. It has three tenses. Believers have been saved from sin’s guilt, are being kept in daily life, and will be saved when Christ appears.',
     },
   ],
   faith: [
@@ -121,7 +121,7 @@ const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
       heading: 'church',
       title: 'Church',
       blurb:
-        'The true church is everyone born again, from Pentecost until Christ raises his own. They are joined to one another and to Christ by the Holy Spirit. That living body is not the same thing as every group on earth that takes the name church.',
+        'The true Church is everyone born again, from Pentecost until Christ raises his own. They are joined to one another and to Christ by the Holy Spirit. That living body is not the same thing as every group on earth that takes the name church.',
     },
   ],
   god: [
@@ -154,7 +154,7 @@ const CHIP_SCOFIELD_SUMMARY: Record<string, ChipSummary[]> = {
       heading: 'teach us to pray',
       title: 'Prayer',
       blurb:
-        'We pray because we are children of God. Jesus taught his own to come to the Father, not as strangers before a distant power, but as sons. Prayer makes sense because the Father cares, and he invites us to ask.',
+        'We pray because we are children of God. Jesus taught his own to come to the Father, not as strangers before a distant power, but as his children. Prayer makes sense because the Father cares, and he invites us to ask.',
     },
   ],
   grace: [
