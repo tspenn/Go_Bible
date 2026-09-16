@@ -39,7 +39,7 @@ function StarterList({ items }: { items: StarterTopic[] }) {
   )
 }
 
-function HitList({ hits }: { hits: StudyHit[] }) {
+function HitList({ hits, hideTitle }: { hits: StudyHit[]; hideTitle?: boolean }) {
   if (hits.length === 0) return null
   return (
     <ul className="topic-list">
@@ -47,7 +47,7 @@ function HitList({ hits }: { hits: StudyHit[] }) {
         const sco = h.source === 'scofield' && h.full && !h.more ? scofieldHrefParts(h.href) : null
         return (
           <li key={`${h.source}-${h.href}-${h.title}-${i}`} className={h.full ? 'topic-teach' : undefined}>
-            {h.more ? (
+            {hideTitle ? null : h.more ? (
               <span className="hit-title">{h.title}</span>
             ) : h.href ? (
               <Link to={h.href}>{h.title}</Link>
@@ -244,8 +244,8 @@ export function TopicsPage({ search = '' }: { search?: string }) {
                 if (results[src].length === 0 && more.length === 0) return null
                 return (
                   <section key={src}>
-                    <h2>{STUDY_LABELS[src]}</h2>
-                    <HitList hits={results[src]} />
+                    <h2>{src === 'blurb' ? (results.blurb[0]?.title ?? q.trim()) : STUDY_LABELS[src]}</h2>
+                    <HitList hits={results[src]} hideTitle={src === 'blurb'} />
                     {src === 'naves' ? (
                       <>
                         <NaveSeeMore items={more} />
