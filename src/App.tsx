@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { parsePath, type Route } from './router'
 import { parseRef } from './data/kjv'
 import { auditScofieldPhrases } from './data/scofield'
@@ -306,6 +307,27 @@ function readingFocus(name: Route['name']) {
   return name === 'chapter' || name === 'verse' || name === 'topic'
 }
 
+function analyticsRoute(name: Route['name']) {
+  switch (name) {
+    case 'home':
+      return '/'
+    case 'topics':
+      return '/topics'
+    case 'topic':
+      return '/topics/:slug'
+    case 'bible':
+      return '/bible'
+    case 'book':
+      return '/bible/:book'
+    case 'chapter':
+      return '/bible/:book/:chapter'
+    case 'verse':
+      return '/bible/:book/:chapter/:verse'
+    default:
+      return `/${name}`
+  }
+}
+
 function Dock({ routeName }: { routeName: Route['name'] }) {
   return (
     <nav className="dock" aria-label="Main">
@@ -393,6 +415,21 @@ function AppShell() {
       <main>
         <Screen route={route} search={loc.search} hash={loc.hash} />
       </main>
+      <Analytics
+        route={analyticsRoute(route.name)}
+        path={loc.pathname}
+        beforeSend={(event) => {
+          if (event.type !== 'pageview') return event
+          try {
+            const url = new URL(event.url)
+            url.search = ''
+            url.hash = ''
+            return { ...event, url: url.href }
+          } catch {
+            return event
+          }
+        }}
+      />
       <div
         className="bottom-chrome"
         aria-hidden={readingFocus(route.name) || undefined}

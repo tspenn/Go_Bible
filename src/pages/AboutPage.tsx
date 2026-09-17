@@ -11,6 +11,10 @@ export function AboutPage() {
     <article className="page">
       <h1>About</h1>
       <p className="lead">{TAGLINE}</p>
+      <p>
+        Page views are counted with Vercel so we can see which screens are used. There are no
+        advertising cookies.
+      </p>
 
       <h2>The reading text</h2>
       <p>{SOURCE_LINE}</p>
