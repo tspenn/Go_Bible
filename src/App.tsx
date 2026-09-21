@@ -188,7 +188,7 @@ function HeaderSearch() {
     return (
       <div className="header-search">
         <button type="button" className="header-search-gate" onClick={() => setOpen(true)}>
-          John 3:16 or a word
+          John 3:16 or a phrase
         </button>
       </div>
     )
@@ -201,8 +201,8 @@ function HeaderSearch() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        placeholder="John 3:16 or a word"
-        aria-label="Search a verse or word"
+        placeholder="John 3:16 or a phrase"
+        aria-label="Search a verse or phrase"
         enterKeyHint="search"
         autoComplete="off"
         autoCorrect="off"

@@ -249,11 +249,45 @@ export function inflect(term: string) {
   return [...out].filter((t) => t.length >= 2)
 }
 
+const PHRASE_SKIP = new Set([
+  'that',
+  'with',
+  'from',
+  'this',
+  'have',
+  'them',
+  'they',
+  'will',
+  'your',
+  'their',
+  'into',
+  'unto',
+  'upon',
+  'give',
+  'make',
+  'come',
+  'went',
+])
+
 export function expandSearchTerms(q: string): string[] {
   const n = q.trim().toLowerCase()
   if (n.length < 2) return []
+  if (n.includes(' ')) {
+    const words = n.split(/[^a-z]+/).filter((w) => w.length >= 4 && !PHRASE_SKIP.has(w))
+    return [...new Set([n, ...words])]
+  }
   const mapped = TO_CORPUS[n] ?? TO_CORPUS[stem(n)] ?? []
   return [...new Set([n, ...inflect(n), ...mapped])]
+}
+
+/** Drop a/an/the so “a hope and a future” still hits “hope and a future”. */
+export function foldArticles(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9']+/g, ' ')
+    .replace(/\b(a|an|the)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 function dropBroad(q: string, terms: string[]) {
@@ -263,6 +297,8 @@ function dropBroad(q: string, terms: string[]) {
 
 /** For verse text: skip broad expansions like “care” that hit half the Bible. */
 export function scriptureSearchTerms(q: string): string[] {
+  const n = q.trim().toLowerCase()
+  if (n.includes(' ')) return [n]
   return dropBroad(q, expandSearchTerms(q))
 }
 
@@ -308,9 +344,14 @@ export function nameMatchesQuery(name: string, q: string) {
 }
 
 export function hasWord(hay: string, term: string) {
-  const h = hay.toLowerCase()
-  const t = term.toLowerCase()
+  const t = term.toLowerCase().trim()
   if (t.length < 2) return false
+  if (t.includes(' ')) {
+    const h = foldArticles(hay)
+    const p = foldArticles(t)
+    return p.length >= 4 && h.includes(p)
+  }
+  const h = hay.toLowerCase()
   let i = 0
   while (i <= h.length - t.length) {
     const at = h.indexOf(t, i)

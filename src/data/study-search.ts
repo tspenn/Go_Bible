@@ -597,7 +597,7 @@ export async function searchStudy(q: string): Promise<StudyResults> {
     q,
     16,
   )
-  const extra = chip ? [] : fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
+  const extra = chip || n.includes(' ') ? [] : fromNave.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
   const asScripture = (v: Verse, full: boolean): StudyHit => ({
     source: 'scripture',
     title: `${v.book} ${v.chapter}:${v.verse}`,
@@ -651,3 +651,10 @@ export const STUDY_LABELS: Record<StudySource, string> = {
 }
 
 export const STUDY_ORDER: StudySource[] = ['blurb', 'scofield', 'henry', 'scripture', 'naves', 'tsk', 'easton']
+
+export function studyOrderFor(q: string): StudySource[] {
+  if (q.trim().includes(' ')) {
+    return ['blurb', 'scripture', 'scofield', 'henry', 'naves', 'tsk', 'easton']
+  }
+  return STUDY_ORDER
+}

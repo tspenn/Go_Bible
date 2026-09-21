@@ -8,7 +8,7 @@ import { HenryProse } from '../components/HenryProse'
 import {
   searchStudy,
   STUDY_LABELS,
-  STUDY_ORDER,
+  studyOrderFor,
   type StudyHit,
   type StudyResults,
 } from '../data/study-search'
@@ -175,8 +175,9 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   }
 
   const searching = q.trim().length >= 2
+  const order = studyOrderFor(q)
   const total = results
-    ? STUDY_ORDER.reduce((n, src) => n + results[src].length, 0) + results.naveMore.length
+    ? order.reduce((n, src) => n + results[src].length, 0) + results.naveMore.length
     : 0
   const showList = suggestOpen && suggestions.length > 0
 
@@ -243,7 +244,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
           {loading && !results ? <p className="lead">Searching…</p> : null}
           {results && total === 0 ? <p>No matching verses or topics.</p> : null}
           {results
-            ? STUDY_ORDER.map((src) => {
+            ? order.map((src) => {
                 const more = src === 'naves' ? results.naveMore : []
                 if (results[src].length === 0 && more.length === 0) return null
                 return (
