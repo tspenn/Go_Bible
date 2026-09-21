@@ -1,6 +1,6 @@
 import web from './web.json' with { type: 'json' }
 import paraData from './web-paras.json' with { type: 'json' }
-import { hasWord, stem } from '../lib/searchTerms'
+import { hasWord, rememberedVerseScore, stem } from '../lib/searchTerms'
 
 export type Verse = {
   book: string
@@ -250,6 +250,51 @@ export function searchVerses(needles: string[], limit = 24): Verse[] {
     const n = perBook.get(row.verse.bookSlug) ?? 0
     if (n >= 3) continue
     perBook.set(row.verse.bookSlug, n + 1)
+    seen.add(key)
+    out.push(row.verse)
+    if (out.length >= limit) break
+  }
+  return out
+}
+
+export function searchRememberedVerses(q: string, limit = 24): Verse[] {
+  const n = q.trim()
+  if (!n.includes(' ')) return searchVerses([n], limit)
+  const scored: { verse: Verse; score: number }[] = []
+  for (const book of data.books) {
+    book.chapters.forEach((ch, ci) => {
+      ch.forEach((text, vi) => {
+        const score = rememberedVerseScore(text, n)
+        if (score < 0) return
+        scored.push({
+          score,
+          verse: {
+            book: book.name,
+            bookSlug: book.slug,
+            chapter: ci + 1,
+            verse: vi + 1,
+            text,
+          },
+        })
+      })
+    })
+  }
+  scored.sort(
+    (a, b) =>
+      a.score - b.score ||
+      a.verse.bookSlug.localeCompare(b.verse.bookSlug) ||
+      a.verse.chapter - b.verse.chapter ||
+      a.verse.verse - b.verse.verse,
+  )
+  const out: Verse[] = []
+  const seen = new Set<string>()
+  const perBook = new Map<string, number>()
+  for (const row of scored) {
+    const key = `${row.verse.bookSlug}:${row.verse.chapter}:${row.verse.verse}`
+    if (seen.has(key)) continue
+    const count = perBook.get(row.verse.bookSlug) ?? 0
+    if (count >= 3) continue
+    perBook.set(row.verse.bookSlug, count + 1)
     seen.add(key)
     out.push(row.verse)
     if (out.length >= limit) break

@@ -1,7 +1,7 @@
 import { boostedScriptureRefs, commentarySearchTerms, hayMatches, scriptureSearchTerms } from '../lib/searchTerms'
 import { DICTIONARY, type DictEntry } from './dictionary'
 import { ensureHenryBook, HENRY_SOURCE, henryNotesForVerse, SEED_NOTES } from './henry'
-import { bookName, findVerse, searchVerses, type Verse } from './kjv'
+import { bookName, findVerse, searchRememberedVerses, searchVerses, type Verse } from './kjv'
 import { featuredOneWords, searchTopics, versesFromNaveTopics, type NaveReading } from './naves'
 import { ensureScofieldBook, notesForVerse, SCOFIELD, SCOFIELD_SOURCE } from './scofield'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from './starters'
@@ -584,7 +584,7 @@ export async function searchStudy(q: string): Promise<StudyResults> {
   const pinned = boostedScriptureRefs(q)
     .map((r) => findVerse(r.bookSlug, r.chapter, r.verse))
     .filter((v): v is Verse => Boolean(v))
-  const fromText = chip ? [] : searchVerses(scriptureSearchTerms(q), 20)
+  const fromText = chip ? [] : n.includes(' ') ? searchRememberedVerses(q, 20) : searchVerses(scriptureSearchTerms(q), 20)
   const seen = new Set(pinned.map((v) => `${v.bookSlug}:${v.chapter}:${v.verse}`))
   const textExtra = fromText.filter((v) => !seen.has(`${v.bookSlug}:${v.chapter}:${v.verse}`))
   for (const v of textExtra) seen.add(`${v.bookSlug}:${v.chapter}:${v.verse}`)

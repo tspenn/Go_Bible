@@ -280,7 +280,7 @@ export function expandSearchTerms(q: string): string[] {
   return [...new Set([n, ...inflect(n), ...mapped])]
 }
 
-/** Drop a/an/the so “a hope and a future” still hits “hope and a future”. */
+/** Drop a/an/the so a typed phrase can still match the Go-Bible wording. */
 export function foldArticles(s: string) {
   return s
     .toLowerCase()
@@ -288,6 +288,132 @@ export function foldArticles(s: string) {
     .replace(/\b(a|an|the)\b/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+/** Glue words people add when they only remember part of a verse. */
+const PHRASE_STOP = new Set([
+  'a',
+  'an',
+  'the',
+  'to',
+  'of',
+  'and',
+  'or',
+  'in',
+  'on',
+  'for',
+  'you',
+  'your',
+  'me',
+  'my',
+  'us',
+  'our',
+  'i',
+  'we',
+  'he',
+  'she',
+  'it',
+  'is',
+  'be',
+  'not',
+  'but',
+  'as',
+  'at',
+  'by',
+  'so',
+  'if',
+  'do',
+  'did',
+  'was',
+  'were',
+  'are',
+  'been',
+  'that',
+  'this',
+  'with',
+  'from',
+  'them',
+  'they',
+  'will',
+  'unto',
+  'upon',
+  'into',
+  'shall',
+  'said',
+  'says',
+  'his',
+  'her',
+  'him',
+  'who',
+  'which',
+  'what',
+  'when',
+  'then',
+  'also',
+  'all',
+  'any',
+  'can',
+  'may',
+  'has',
+  'had',
+  'have',
+  'lord',
+])
+
+export function phraseContentWords(q: string): string[] {
+  const out: string[] = []
+  const seen = new Set<string>()
+  for (const w of foldArticles(q).split(' ')) {
+    if (w.length < 3 || PHRASE_STOP.has(w) || seen.has(w)) continue
+    seen.add(w)
+    out.push(w)
+  }
+  return out
+}
+
+function tokenFits(hayTok: string, want: string) {
+  if (hayTok === want) return true
+  if (hayTok.length >= 4 && want.length >= 4) {
+    const a = stem(hayTok)
+    const b = stem(want)
+    return a.length >= 4 && a === b
+  }
+  return false
+}
+
+function firstFit(hayToks: string[], want: string, from: number) {
+  for (let i = from; i < hayToks.length; i++) {
+    if (tokenFits(hayToks[i] ?? '', want)) return i
+  }
+  return -1
+}
+
+function wordsInOrder(hayToks: string[], wants: string[]) {
+  let from = 0
+  for (const w of wants) {
+    const at = firstFit(hayToks, w, from)
+    if (at < 0) return false
+    from = at + 1
+  }
+  return true
+}
+
+/** Lower is better. -1 means this verse is not a remembered-phrase hit. */
+export function rememberedVerseScore(text: string, q: string): number {
+  const foldedQ = foldArticles(q)
+  const foldedHay = foldArticles(text)
+  if (foldedQ.length >= 6 && foldedHay.includes(foldedQ)) return 0
+  const wants = phraseContentWords(q)
+  if (wants.length < 2) return -1
+  const hayToks = foldedHay.split(' ').filter(Boolean)
+  const hits = wants.filter((w) => firstFit(hayToks, w, 0) >= 0)
+  const need = wants.length <= 3 ? wants.length : wants.length - 1
+  if (hits.length < need) return -1
+  const inOrder = wordsInOrder(hayToks, hits)
+  if (hits.length === wants.length && inOrder) return 1
+  if (hits.length === wants.length) return 2
+  if (inOrder) return 3
+  return 4
 }
 
 function dropBroad(q: string, terms: string[]) {
