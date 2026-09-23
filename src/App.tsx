@@ -166,21 +166,25 @@ function HeaderSearch() {
 
   useEffect(() => {
     setOpen(false)
+    setQ('')
   }, [loc.pathname, loc.search])
 
   useEffect(() => {
     if (!open) return
-    inputRef.current?.focus()
+    const el = inputRef.current
+    if (!el) return
+    el.focus()
+    el.select()
   }, [open])
 
   function go(e: FormEvent) {
     e.preventDefault()
-    const ref = parseRef(q)
+    const trimmed = q.trim()
+    const ref = parseRef(trimmed)
     if (ref) {
       navigate(`/bible/${ref.bookSlug}/${ref.chapter}/${ref.verse}`)
       return
     }
-    const trimmed = q.trim()
     navigate(trimmed ? `/topics?q=${encodeURIComponent(trimmed)}` : '/topics')
   }
 
@@ -201,6 +205,7 @@ function HeaderSearch() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        onInput={(e) => setQ((e.target as HTMLInputElement).value)}
         placeholder="John 3:16 or a phrase"
         aria-label="Search a verse or phrase"
         enterKeyHint="search"

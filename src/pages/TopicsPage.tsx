@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, navigate, replacePath } from '../App'
-import { bookName } from '../data/kjv'
+import { bookName, parseRef } from '../data/kjv'
 import { featuredOneWords, NAVES_SOURCE, oneWordSuggestions, type NaveReading } from '../data/naves'
 import { MORE_NAVE_STARTERS, MORE_STARTERS, STARTER_TOPICS, type StarterTopic } from '../data/starters'
 import { ScofieldProse, scofieldHrefParts } from '../components/ScofieldProse'
@@ -108,7 +108,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   const [results, setResults] = useState<StudyResults | null>(null)
   const [loading, setLoading] = useState(false)
   const [suggestOpen, setSuggestOpen] = useState(false)
-  const [active, setActive] = useState(0)
+  const [active, setActive] = useState(-1)
   const boxRef = useRef<HTMLDivElement>(null)
   const urlTimer = useRef(0)
 
@@ -146,7 +146,7 @@ export function TopicsPage({ search = '' }: { search?: string }) {
   }, [q])
 
   useEffect(() => {
-    setActive(0)
+    setActive(-1)
   }, [suggestions])
 
   useEffect(() => {
@@ -168,9 +168,13 @@ export function TopicsPage({ search = '' }: { search?: string }) {
     setQ(value)
     setSuggestOpen(true)
     window.clearTimeout(urlTimer.current)
+    const n = value.trim()
+    if (n.length < 2) {
+      if (fromUrl) replacePath('/topics')
+      return
+    }
     urlTimer.current = window.setTimeout(() => {
-      const n = value.trim()
-      replacePath(n.length >= 2 ? `/topics?q=${encodeURIComponent(n)}` : '/topics')
+      replacePath(`/topics?q=${encodeURIComponent(n)}`)
     }, 220)
   }
 
@@ -187,22 +191,37 @@ export function TopicsPage({ search = '' }: { search?: string }) {
       <div className="topic-search" ref={boxRef}>
         <input
           className="search-input"
+          type="search"
           value={q}
           onChange={(e) => typeQuery(e.target.value)}
+          onInput={(e) => typeQuery((e.target as HTMLInputElement).value)}
           onFocus={() => setSuggestOpen(true)}
           onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setSuggestOpen(false)
+              return
+            }
+            if (e.key === 'Enter') {
+              const ref = parseRef(q)
+              if (ref) {
+                e.preventDefault()
+                setSuggestOpen(false)
+                navigate(`/bible/${ref.bookSlug}/${ref.chapter}/${ref.verse}`)
+                return
+              }
+              if (showList && active >= 0 && suggestions[active]) {
+                e.preventDefault()
+                pick(suggestions[active])
+              }
+              return
+            }
             if (!showList) return
             if (e.key === 'ArrowDown') {
               e.preventDefault()
-              setActive((i) => (i + 1) % suggestions.length)
+              setActive((i) => (i < 0 ? 0 : (i + 1) % suggestions.length))
             } else if (e.key === 'ArrowUp') {
               e.preventDefault()
-              setActive((i) => (i - 1 + suggestions.length) % suggestions.length)
-            } else if (e.key === 'Enter' && suggestions[active]) {
-              e.preventDefault()
-              pick(suggestions[active])
-            } else if (e.key === 'Escape') {
-              setSuggestOpen(false)
+              setActive((i) => (i < 0 ? suggestions.length - 1 : (i - 1 + suggestions.length) % suggestions.length))
             }
           }}
           placeholder="Search Scripture and topics"
