@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from '../App'
 import { PEN_COLORS, penLabel, setPenName, useMarks } from '../data/marks'
+import { OfflinePack } from '../components/OfflinePack'
 import { reloadApp } from '../lib/appUpdate'
 import { useAuth } from '../lib/auth'
 import { setListenGender, useListenGender, warmupVoices } from '../lib/speak'
@@ -35,6 +36,8 @@ export function SettingsPage() {
           Refresh
         </button>
       </p>
+
+      <OfflinePack />
 
       <h2>Find a chapter</h2>
       <ol className="how-to">

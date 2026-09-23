@@ -15,6 +15,10 @@ export function AboutPage() {
         Page views are counted with Vercel so we can see which screens are used. There are no
         advertising cookies.
       </p>
+      <p>
+        You can download the Bible and the notes onto your device in{' '}
+        <Link to="/settings">How to use</Link>, then read with no signal.
+      </p>
 
       <h2>The reading text</h2>
       <p>{SOURCE_LINE}</p>
