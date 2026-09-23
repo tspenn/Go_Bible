@@ -364,15 +364,23 @@ export function phraseContentWords(q: string): string[] {
   const out: string[] = []
   const seen = new Set<string>()
   for (const w of foldArticles(q).split(' ')) {
-    if (w.length < 3 || PHRASE_STOP.has(w) || seen.has(w)) continue
+    if (PHRASE_STOP.has(w) || seen.has(w)) continue
+    if (w.length < 3 && w !== 'am') continue
     seen.add(w)
     out.push(w)
   }
   return out
 }
 
+/** Words people often swap when they only remember a verse in part. */
+const RECALL_NEAR: Record<string, string[]> = {
+  light: ['life'],
+  life: ['light'],
+}
+
 function tokenFits(hayTok: string, want: string) {
   if (hayTok === want) return true
+  if ((RECALL_NEAR[want] ?? []).includes(hayTok)) return true
   if (hayTok.length >= 4 && want.length >= 4) {
     const a = stem(hayTok)
     const b = stem(want)
@@ -410,10 +418,10 @@ export function rememberedVerseScore(text: string, q: string): number {
   const need = wants.length <= 3 ? wants.length : wants.length - 1
   if (hits.length < need) return -1
   const inOrder = wordsInOrder(hayToks, hits)
+  if (hits.length < wants.length && !inOrder) return -1
   if (hits.length === wants.length && inOrder) return 1
   if (hits.length === wants.length) return 2
-  if (inOrder) return 3
-  return 4
+  return 3 + (wants.length - hits.length)
 }
 
 function dropBroad(q: string, terms: string[]) {

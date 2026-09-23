@@ -115,9 +115,83 @@ for (const b of data.books) {
   BOOK_ALIASES[b.slug] = b.slug
 }
 
+/** Collapse doubled letters so philipians still matches Philippians. */
+function foldBookKey(s: string) {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/([a-z])\1+/g, '$1')
+}
+
+function letterCount(s: string) {
+  return s.replace(/[^a-z]/g, '').length
+}
+
+/** Damerau–Levenshtein, including adjacent transpositions (pslams → psalms). */
+function bookEditDistance(a: string, b: string) {
+  const n = a.length
+  const m = b.length
+  const dp: number[][] = Array.from({ length: n + 1 }, () => Array(m + 1).fill(0))
+  for (let i = 0; i <= n; i++) dp[i]![0] = i
+  for (let j = 0; j <= m; j++) dp[0]![j] = j
+  for (let i = 1; i <= n; i++) {
+    for (let j = 1; j <= m; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1
+      let best = Math.min(dp[i - 1]![j]! + 1, dp[i]![j - 1]! + 1, dp[i - 1]![j - 1]! + cost)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        best = Math.min(best, dp[i - 2]![j - 2]! + 1)
+      }
+      dp[i]![j] = best
+    }
+  }
+  return dp[n]![m]!
+}
+
+function maxBookDistance(letters: number) {
+  if (letters < 4) return 0
+  if (letters < 8) return 1
+  return 2
+}
+
+const FOLDED_BOOKS: { key: string; slug: string }[] = []
+const foldedSeen = new Set<string>()
+for (const [alias, slug] of Object.entries(BOOK_ALIASES)) {
+  const key = foldBookKey(alias)
+  const tag = `${key}|${slug}`
+  if (!key || foldedSeen.has(tag)) continue
+  foldedSeen.add(tag)
+  FOLDED_BOOKS.push({ key, slug })
+}
+
 export function resolveBookSlug(book: string) {
   const key = book.trim().toLowerCase().replace(/\./g, '').replace(/\s+/g, ' ')
-  return BOOK_ALIASES[key] ?? (bySlug.has(slugBook(key)) ? slugBook(key) : slugBook(book))
+  if (BOOK_ALIASES[key]) return BOOK_ALIASES[key]
+  const exactSlug = slugBook(key)
+  if (bySlug.has(exactSlug)) return exactSlug
+
+  const folded = foldBookKey(key)
+  const exactFold = FOLDED_BOOKS.find((row) => row.key === folded)
+  if (exactFold) return exactFold.slug
+
+  const max = maxBookDistance(letterCount(folded))
+  if (max === 0 || !folded) return exactSlug || slugBook(book)
+
+  let best: string | null = null
+  let bestDist = max + 1
+  let ties = 0
+  for (const row of FOLDED_BOOKS) {
+    const d = bookEditDistance(folded, row.key)
+    if (d < bestDist) {
+      bestDist = d
+      best = row.slug
+      ties = 1
+    } else if (d === bestDist && row.slug !== best) {
+      ties += 1
+    }
+  }
+  if (best && bestDist <= max && ties === 1) return best
+  return exactSlug || slugBook(book)
 }
 
 export function isKnownBook(book: string) {
@@ -306,8 +380,10 @@ export function parseRef(input: string) {
   const cleaned = input.trim().replace(/\./g, ' ').replace(/:/g, ' ').replace(/\s+/g, ' ')
   const match = cleaned.match(/^(.+?)\s+(\d+)\s+(\d+)$/)
   if (!match) return null
+  const bookSlug = resolveBookSlug(match[1] ?? '')
+  if (!bySlug.has(bookSlug)) return null
   return {
-    bookSlug: resolveBookSlug(match[1]),
+    bookSlug,
     chapter: Number(match[2]),
     verse: Number(match[3]),
   }
